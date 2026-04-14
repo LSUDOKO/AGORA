@@ -42,82 +42,18 @@ export async function auditPool(poolAddress: string, rpcUrl: string): Promise<Au
     transport: http(rpcUrl),
   });
 
-  // For testnet, use basic on-chain checks
-  if (chain.id === 1952) {
-    try {
-      const [reserves, liquidity] = await Promise.all([
-        publicClient.readContract({
-          address: poolAddress as `0x${string}`,
-          abi: pairAbi,
-          functionName: "getReserves",
-        }),
-        publicClient.readContract({
-          address: poolAddress as `0x${string}`,
-          abi: pairAbi,
-          functionName: "totalSupply",
-        }),
-      ]);
-
-      const [reserve0, reserve1] = reserves;
-      const totalReserves = reserve0 + reserve1;
-      let score = 50;
-      const reasons: string[] = [];
-
-      if (liquidity > 1_000_000n) {
-        score += 15;
-        reasons.push("Healthy LP token supply depth detected.");
-      } else {
-        reasons.push("Limited LP token depth — monitor slippage closely.");
-      }
-
-      if (totalReserves > 10_000_000n) {
-        score += 20;
-        reasons.push("Pool reserves are deep enough for medium-sized execution.");
-      } else {
-        reasons.push("Pool reserves are thin for larger orders.");
-      }
-
-      if (reserve0 > 1_000_000n && reserve1 > 1_000_000n) {
-        score += 15;
-        reasons.push("Balanced reserve profile across both sides of the pair.");
-      } else {
-        reasons.push("Reserve imbalance could increase price impact.");
-      }
-
-      const passed = score >= 75;
-
-      return {
-        score,
-        passed,
-        reasons,
-        liquidity,
-        reserve0,
-        reserve1,
-      };
-    } catch (error) {
-      console.error("Testnet audit error:", error);
-      return {
-        score: 0,
-        passed: false,
-        reasons: ["Failed to fetch pool data from testnet"],
-        liquidity: 0n,
-        reserve0: 0n,
-        reserve1: 0n,
-      };
-    }
-  }
-
-  // For mainnet (chain 196), use comprehensive Onchain OS risk analysis
+  const chainName = chain.id === 1952 ? "xlayer-testnet" : "xlayer";
+  
   try {
-    console.log(`Auditing pool ${poolAddress} using Onchain OS...`);
+    console.log(`Auditing pool ${poolAddress} using Onchain OS on ${chain.name}...`);
     
     // Get token addresses from pool (assuming it's a token address for now)
     const tokenAddress = poolAddress;
     
     // Fetch comprehensive risk data
-    const advancedInfo = callOnchainOS(`token advanced-info --address ${tokenAddress} --chain xlayer`);
-    const holderData = callOnchainOS(`token holders --address ${tokenAddress} --chain xlayer`);
-    const clusterData = callOnchainOS(`token cluster-overview --address ${tokenAddress} --chain xlayer`);
+    const advancedInfo = callOnchainOS(`token advanced-info --address ${tokenAddress} --chain ${chainName}`);
+    const holderData = callOnchainOS(`token holders --address ${tokenAddress} --chain ${chainName}`);
+    const clusterData = callOnchainOS(`token cluster-overview --address ${tokenAddress} --chain ${chainName}`);
     
     let score = 50;
     const reasons: string[] = [];

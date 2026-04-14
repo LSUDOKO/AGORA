@@ -2,62 +2,70 @@
 
 ## 1. Environment Setup
 
-- [ ] 1.1 Create .env file from .env.example
-- [ ] 1.2 Add PRIVATE_KEY for deployment wallet
-- [ ] 1.3 Add OKLINK_API_KEY for contract verification
-- [ ] 1.4 Add UNISWAP_API_KEY for Trading API (mainnet only)
-- [ ] 1.5 Install onchainos CLI: `curl -sSL https://raw.githubusercontent.com/okx/onchainos-skills/latest/install.sh | sh`
+- [x] 1.1 Create .env file from .env.example
+- [x] 1.2 Add PRIVATE_KEY for deployment wallet
+- [x] 1.3 Add OKLINK_API_KEY for contract verification
+- [x] 1.4 Add UNISWAP_API_KEY for Trading API
+- [x] 1.5 Install onchainos CLI v2.2.9
 
 ## 2. Contract Deployment
 
-- [ ] 2.1 Compile contracts: `npm run contracts:compile`
-- [ ] 2.2 Deploy to testnet: `npm run contracts:deploy:testnet`
-- [ ] 2.3 Verify deployments/addresses.json has all contract addresses
-- [ ] 2.4 Seed skills: `npm run contracts:seed:testnet`
-- [ ] 2.5 Verify contracts on OKLink: `npm run contracts:verify:script:testnet`
+- [x] 2.1 Compile contracts: `npm run contracts:compile`
+- [x] 2.2 Deploy to testnet: `npm run contracts:deploy:testnet`
+  - Fixed ethers v6 compatibility issue
+  - Created tsconfig.hardhat.json for tsx execution
+- [x] 2.3 Verify deployments/addresses.json has all contract addresses
+- [x] 2.4 Seed skills: `npm run contracts:seed:testnet`
+  - Registered 6 skills successfully
+- [x] 2.5 Verify contracts on OKLink: `npm run contracts:verify:script:testnet`
+  - All 5 contracts verified on OKLink explorer
+- [x] 2.6 Register agent: `npm run contracts:register:testnet`
+  - Agent ID: 1
+- [x] 2.7 Mint test USDC: `npm run contracts:mint:testnet`
+  - Minted 1,000,000 tUSDC
 
 ## 3. Yield Finder Real Integration
 
-- [ ] 3.1 Create helper function to execute onchainos CLI commands
+- [x] 3.1 Create helper function to execute onchainos CLI commands
   - Use Node.js `child_process.execSync`
   - Parse JSON output
   - Handle errors gracefully
 
-- [ ] 3.2 Update findYield() to use onchainos token liquidity
+- [x] 3.2 Update findYield() to use onchainos token liquidity
   - Get USDC liquidity pools on X Layer
   - Parse pool addresses and reserves
   - Calculate real APY from pool data
 
-- [ ] 3.3 Add price fetching with onchainos market price
+- [x] 3.3 Add price fetching with onchainos market price
   - Get token prices for APY calculation
   - Handle missing price data
 
-- [ ] 3.4 Test yieldFinder on testnet
-  - Run standalone: `tsx agent/skills/yieldFinder.ts`
-  - Verify it returns real pool data
+- [ ] 3.4 Test yieldFinder on testnet with real data
+  - Remove mock data fallback
+  - Use real Onchain OS data for testnet
 
 ## 4. Risk Auditor Real Integration
 
-- [ ] 4.1 Update auditPool() to use onchainos token advanced-info
+- [x] 4.1 Update auditPool() to use onchainos token advanced-info
   - Get risk level, dev stats, token tags
   - Parse risk indicators
 
-- [ ] 4.2 Add holder analysis with onchainos token holders
+- [x] 4.2 Add holder analysis with onchainos token holders
   - Get top 100 holders
   - Calculate concentration metrics
 
-- [ ] 4.3 Add cluster analysis with onchainos token cluster-overview
+- [x] 4.3 Add cluster analysis with onchainos token cluster-overview
   - Get rug pull probability
   - Get new address percentage
   - Get same-fund-source percentage
 
-- [ ] 4.4 Implement comprehensive risk scoring
+- [x] 4.4 Implement comprehensive risk scoring
   - Weight different risk factors
   - Set threshold at 75 for pass/fail
 
-- [ ] 4.5 Test riskAuditor on testnet
-  - Run standalone with test pool address
-  - Verify risk scores are realistic
+- [ ] 4.5 Test riskAuditor on testnet with real data
+  - Remove mock data fallback
+  - Use real Onchain OS data for testnet
 
 ## 5. Uniswap Integration Testing
 

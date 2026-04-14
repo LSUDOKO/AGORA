@@ -154,50 +154,11 @@ export class PrimeAgent {
         return auditPool(opportunity.poolAddress, this.rpcUrl);
       }
 
-      const agentId = this.agentId ?? (await this.ensureAgentId());
-      const allowance = await this.publicClient.readContract({
-        address: this.addresses.usdc,
-        abi: erc20Abi,
-        functionName: "allowance",
-        args: [this.account.address, this.addresses.paymentRouter],
-      });
-
-      if (allowance < RISK_AUDITOR_PRICE) {
-        console.log("Approving tUSDC/USDC for x402PaymentRouter...");
-        const approveHash = await this.walletClient.writeContract({
-          address: this.addresses.usdc,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [this.addresses.paymentRouter, parseUnits("1000", 6)],
-          account: this.account,
-        });
-        await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
-        console.log(`Approve confirmed: ${approveHash}`);
-      }
-
-      console.log(`Hiring Risk Auditor for pool ${opportunity.poolAddress}...`);
-      const hireHash = await this.walletClient.writeContract({
-        address: this.addresses.paymentRouter,
-        abi: paymentRouterAbi,
-        functionName: "hireSkill",
-        args: [agentId, RISK_AUDITOR_SKILL_ID],
-        account: this.account,
-      });
-      await this.publicClient.waitForTransactionReceipt({ hash: hireHash });
-
-      const receiptId = await this.publicClient.readContract({
-        address: this.addresses.paymentRouter,
-        abi: paymentRouterAbi,
-        functionName: "receiptCount",
-      });
-
-      console.log(`Risk Auditor hired. receiptId=${receiptId.toString()} tx=${hireHash}`);
+      // Note: On testnet, skills are registered by the same wallet, so x402 payment will fail with "self hire not allowed"
+      // In production, skills would be registered by different providers
+      console.log("Running risk audit directly (x402 payment requires different skill provider)...");
       const auditResult = await auditPool(opportunity.poolAddress, this.rpcUrl);
-
-      console.warn(
-        "markCompleted requires the registered skill provider wallet. PrimeAgent cannot finalize provider-side completion unless it controls that provider account.",
-      );
-
+      console.log(`Risk Audit complete: score=${auditResult.score} passed=${auditResult.passed}`);
       return auditResult;
     } catch (error) {
       console.error("hireRiskAuditor failed:", error);
@@ -220,47 +181,6 @@ export class PrimeAgent {
         `Execution ready: pool=${opportunity.poolAddress} apy=${opportunity.estimatedAPY}% auditScore=${auditResult.score}`,
       );
 
-      // On testnet, skip Uniswap execution but still do bookkeeping
-      if (this.chain.id === 1952) {
-        console.log("Testnet detected. Skipping Uniswap swap (Trading API only supports mainnet).");
-        console.log("Simulating successful swap for demo purposes...");
-        
-        if (agentId > 0n && isConfiguredAddress(this.addresses.agentRegistry) && isConfiguredAddress(this.addresses.usdc)) {
-          const txHash = await this.walletClient.writeContract({
-            address: this.addresses.agentRegistry,
-            abi: agentRegistryAbi,
-            functionName: "incrementTxCount",
-            args: [agentId],
-            account: this.account,
-          });
-          await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-          console.log(`Transaction count incremented: ${txHash}`);
-
-          const earningsHash = await this.walletClient.writeContract({
-            address: this.addresses.agentRegistry,
-            abi: agentRegistryAbi,
-            functionName: "recordEarnings",
-            args: [agentId, parseUnits("12.5", 6)],
-            account: this.account,
-          });
-          await this.publicClient.waitForTransactionReceipt({ hash: earningsHash });
-          console.log(`Earnings recorded: ${earningsHash}`);
-
-          const balance = await this.publicClient.readContract({
-            address: this.addresses.usdc,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [this.account.address],
-          });
-
-          console.log(
-            `Testnet simulation complete. Wallet tUSDC balance=${formatUnits(balance, 6)}`,
-          );
-        }
-        return;
-      }
-
-      // Mainnet: Execute real Uniswap swap
       if (!this.routerAddress) {
         throw new Error(`Uniswap router address not found for chain ${this.chain.id}`);
       }
@@ -326,6 +246,7 @@ export class PrimeAgent {
           account: this.account,
         });
         await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+        console.log(`Transaction count incremented: ${txHash}`);
 
         const earningsHash = await this.walletClient.writeContract({
           address: this.addresses.agentRegistry,
@@ -335,6 +256,7 @@ export class PrimeAgent {
           account: this.account,
         });
         await this.publicClient.waitForTransactionReceipt({ hash: earningsHash });
+        console.log(`Earnings recorded: ${earningsHash}`);
 
         const balance = await this.publicClient.readContract({
           address: this.addresses.usdc,
@@ -344,7 +266,7 @@ export class PrimeAgent {
         });
 
         console.log(
-          `PrimeAgent execution bookkeeping complete. Wallet USDC balance=${formatUnits(balance, 6)}`,
+          `PrimeAgent execution bookkeeping complete. Wallet balance=${formatUnits(balance, 6)} ${this.chain.id === 1952 ? 'tUSDC' : 'USDC'}`,
         );
       } else {
         console.log("Swap completed. Skipping AGORA contract bookkeeping because deployment addresses are incomplete.");

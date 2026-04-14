@@ -80,8 +80,9 @@ export async function findYield(rpcUrl: string): Promise<YieldOpportunity[]> {
   try {
     console.log(`Fetching liquidity pools from Onchain OS for USDC on ${chain.name}...`);
     
-    // For testnet, use the TestUSDC address; for mainnet, use real USDC
-    const usdcAddress = chain.id === 1952 ? "0x70799d35aC43AD21e106270E14365a9B96BDc993" : MAINNET_USDC;
+    // Always use mainnet USDC address for Onchain OS queries since it has the real pool data
+    // The chain.id check is only for determining which token to use in actual swaps
+    const usdcAddress = MAINNET_USDC;
     
     const liquidityData = callOnchainOS(`token liquidity --address ${usdcAddress} --chain ${chainName}`);
     

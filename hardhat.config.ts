@@ -7,6 +7,7 @@ import type { HardhatUserConfig } from "hardhat/config";
 dotenv.config();
 
 const privateKey = process.env.PRIVATE_KEY;
+const okxApiKey = process.env.OKLINK_API_KEY || process.env.OKAPI_KEY || "";
 const accounts = privateKey ? [privateKey] : [];
 
 const config: HardhatUserConfig = {
@@ -35,8 +36,8 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      xlayer_testnet: process.env.OKLINK_API_KEY || "",
-      xlayer_mainnet: process.env.OKLINK_API_KEY || "",
+      xlayer_testnet: okxApiKey,
+      xlayer_mainnet: okxApiKey,
     },
     customChains: [
       {
@@ -58,7 +59,7 @@ const config: HardhatUserConfig = {
     ],
   },
   okxweb3explorer: {
-    apiKey: process.env.OKLINK_API_KEY || "",
+    apiKey: okxApiKey,
   },
 };
 

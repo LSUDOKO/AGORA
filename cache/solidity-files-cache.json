@@ -1,0 +1,189 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/arpit/Desktop/hackathon_projects/agora/contracts/AgentRegistry.sol": {
+      "lastModificationDate": 1776101882034,
+      "contentHash": "291e410dd3bcec538de57e5d11ac011a",
+      "sourceName": "contracts/AgentRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "AgentRegistry"
+      ]
+    },
+    "/home/arpit/Desktop/hackathon_projects/agora/contracts/LeaderboardTracker.sol": {
+      "lastModificationDate": 1776102009024,
+      "contentHash": "60e61b46b39e362663023e99aff078af",
+      "sourceName": "contracts/LeaderboardTracker.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "LeaderboardTracker"
+      ]
+    },
+    "/home/arpit/Desktop/hackathon_projects/agora/contracts/SkillsRegistry.sol": {
+      "lastModificationDate": 1776101938434,
+      "contentHash": "86f85829070406755da742ffab21f65f",
+      "sourceName": "contracts/SkillsRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "SkillsRegistry"
+      ]
+    },
+    "/home/arpit/Desktop/hackathon_projects/agora/contracts/x402PaymentRouter.sol": {
+      "lastModificationDate": 1776102081700,
+      "contentHash": "1260c97c9ef7d89862a478070d79e252",
+      "sourceName": "contracts/x402PaymentRouter.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IAgentRegistry",
+        "IERC20",
+        "ILeaderboardTracker",
+        "ISkillsRegistry",
+        "x402PaymentRouter"
+      ]
+    },
+    "/home/arpit/Desktop/hackathon_projects/agora/contracts/TestUSDC.sol": {
+      "lastModificationDate": 1776145282454,
+      "contentHash": "c989b8bee5911057c90381d38135036b",
+      "sourceName": "contracts/TestUSDC.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "TestUSDC"
+      ]
+    }
+  }
+}

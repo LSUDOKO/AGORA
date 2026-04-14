@@ -1,0 +1,17 @@
+{
+  "network": "xlayer_testnet",
+  "chainId": 1952,
+  "deployer": "",
+  "usdc": "",
+  "paymentTokenSymbol": "tUSDC",
+  "testTokens": {
+    "TestUSDC": ""
+  },
+  "contracts": {
+    "AgentRegistry": "",
+    "SkillsRegistry": "",
+    "x402PaymentRouter": "",
+    "LeaderboardTracker": ""
+  },
+  "deployedAt": ""
+}

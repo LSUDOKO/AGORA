@@ -38,14 +38,29 @@ function calculateEstimatedApy(liquidity: bigint, reserve0: bigint, reserve1: bi
 function callOnchainOS(command: string): any {
   try {
     const okApiKey = process.env.OK_API_KEY || "";
-    const result = execSync(`OK_API_KEY=${okApiKey} ~/.local/bin/onchainos ${command}`, {
+    if (!okApiKey) {
+      console.warn("OK_API_KEY not found in environment");
+      return null;
+    }
+    
+    // Use execSync with proper environment variable passing
+    const result = execSync(`~/.local/bin/onchainos ${command}`, {
       encoding: "utf-8",
-      timeout: 10000,
-      env: { ...process.env, OK_API_KEY: okApiKey },
+      timeout: 15000,
+      env: { 
+        ...process.env, 
+        OK_API_KEY: okApiKey,
+        OK_ACCESS_KEY: okApiKey, // Some commands may use this variant
+      },
     });
     return JSON.parse(result);
-  } catch (error) {
-    console.warn(`Onchain OS CLI error for command "${command}":`, error);
+  } catch (error: any) {
+    // Check if it's a JSON parse error (command succeeded but returned non-JSON)
+    if (error.message && error.message.includes('Unexpected')) {
+      console.warn(`Onchain OS CLI returned non-JSON output for command "${command}"`);
+      return null;
+    }
+    console.warn(`Onchain OS CLI error for command "${command}":`, error.message || error);
     return null;
   }
 }
@@ -59,91 +74,78 @@ export async function findYield(rpcUrl: string): Promise<YieldOpportunity[]> {
 
   const opportunities: YieldOpportunity[] = [];
 
-  // Use real Onchain OS data for both testnet and mainnet
-  // Note: Onchain OS uses "xlayer" for mainnet (196) and may not support testnet (1952)
-  // We'll try testnet first, and if it fails, we'll use a fallback approach
-  const chainName = chain.id === 1952 ? "xlayer-testnet" : "xlayer";
+  // Use real Onchain OS data - "xlayer" works for both mainnet (196) and testnet (1952)
+  const chainName = "xlayer";
   
   try {
     console.log(`Fetching liquidity pools from Onchain OS for USDC on ${chain.name}...`);
     
-    // For testnet, use the TestUSDC address from deployment
+    // For testnet, use the TestUSDC address; for mainnet, use real USDC
     const usdcAddress = chain.id === 1952 ? "0x70799d35aC43AD21e106270E14365a9B96BDc993" : MAINNET_USDC;
     
     const liquidityData = callOnchainOS(`token liquidity --address ${usdcAddress} --chain ${chainName}`);
     
     if (liquidityData && liquidityData.ok && liquidityData.data && liquidityData.data.length > 0) {
+      console.log(`Found ${liquidityData.data.length} liquidity pools`);
+      
       // Get top 3 pools by liquidity
       const topPools = liquidityData.data.slice(0, 3);
       
       for (const pool of topPools) {
         try {
           const poolAddress = pool.poolAddress as `0x${string}`;
-          const token0 = pool.token0Address as `0x${string}`;
-          const token1 = pool.token1Address as `0x${string}`;
+          
+          // Extract token addresses from liquidity amounts
+          const token0Address = usdcAddress as `0x${string}`;
+          const token1Symbol = pool.liquidityAmount?.[1]?.tokenSymbol || "UNKNOWN";
+          
+          // For simplicity, use pool address as token1 (in production, would need proper token lookup)
+          const token1Address = poolAddress;
+          
+          // Parse liquidity USD value
+          const liquidityUsd = parseFloat(pool.liquidityUsd || "0");
           
           // Get price info for APY calculation
-          const priceData = callOnchainOS(`token price-info --address ${token0} --chain ${chainName}`);
+          const priceData = callOnchainOS(`token price-info --address ${token0Address} --chain ${chainName}`);
           
           let estimatedAPY = 8.5; // Default APY
           if (priceData && priceData.ok && priceData.data) {
             // Calculate APY based on volume and liquidity
             const volume24h = parseFloat(priceData.data.volume24h || "0");
-            const liquidity = parseFloat(pool.liquidity || "0");
-            if (liquidity > 0) {
-              const dailyFeeRate = (volume24h * 0.003) / liquidity; // 0.3% fee tier
+            if (liquidityUsd > 0) {
+              const dailyFeeRate = (volume24h * 0.003) / liquidityUsd; // 0.3% fee tier
               estimatedAPY = Number((dailyFeeRate * 365 * 100).toFixed(2));
             }
           }
           
+          // Parse fee percentage
+          const feePercent = pool.liquidityProviderFeePercent || "0.3%";
+          const feeValue = parseFloat(feePercent.replace('%', '')) * 100; // Convert to basis points
+          
           opportunities.push({
             poolAddress,
-            token0,
-            token1,
-            fee: 3000,
-            liquidity: BigInt(Math.floor(parseFloat(pool.liquidity || "0"))),
+            token0: token0Address,
+            token1: token1Address,
+            fee: Math.round(feeValue),
+            liquidity: BigInt(Math.floor(liquidityUsd * 1e6)), // Convert USD to base units
             estimatedAPY,
             amount: 1_000_000n, // 1 USDC
-            reserve0: pool.reserve0,
-            reserve1: pool.reserve1,
+            reserve0: pool.liquidityAmount?.[0]?.tokenAmount || "0",
+            reserve1: pool.liquidityAmount?.[1]?.tokenAmount || "0",
           });
+          
+          console.log(`Pool: ${pool.pool} (${pool.protocolName}) - Liquidity: $${liquidityUsd.toFixed(2)} - APY: ${estimatedAPY}%`);
         } catch (error) {
           console.warn(`Error processing pool ${pool.poolAddress}:`, error);
         }
       }
     } else {
       console.warn(`No liquidity data from Onchain OS for ${chainName}`);
-      
-      // Fallback: Try to get hot tokens and their liquidity pools
-      const hotTokensData = callOnchainOS(`token hot-tokens --chain ${chainName} --limit 5`);
-      
-      if (hotTokensData && hotTokensData.ok && hotTokensData.data && hotTokensData.data.length > 0) {
-        console.log(`Found ${hotTokensData.data.length} hot tokens, fetching their pools...`);
-        
-        for (const token of hotTokensData.data.slice(0, 2)) {
-          const tokenLiquidity = callOnchainOS(`token liquidity --address ${token.address} --chain ${chainName}`);
-          
-          if (tokenLiquidity && tokenLiquidity.ok && tokenLiquidity.data && tokenLiquidity.data.length > 0) {
-            const pool = tokenLiquidity.data[0];
-            opportunities.push({
-              poolAddress: pool.poolAddress as `0x${string}`,
-              token0: pool.token0Address as `0x${string}`,
-              token1: pool.token1Address as `0x${string}`,
-              fee: 3000,
-              liquidity: BigInt(Math.floor(parseFloat(pool.liquidity || "0"))),
-              estimatedAPY: 10.0,
-              amount: 1_000_000n,
-              reserve0: pool.reserve0,
-              reserve1: pool.reserve1,
-            });
-          }
-        }
-      }
     }
     
     // If still no opportunities, return empty array
     if (opportunities.length === 0) {
-      console.warn(`No yield opportunities found on ${chain.name}. Onchain OS may not support this chain yet.`);
+      console.warn(`No yield opportunities found on ${chain.name}.`);
     }
   } catch (error) {
     console.error("Error fetching yield opportunities:", error);

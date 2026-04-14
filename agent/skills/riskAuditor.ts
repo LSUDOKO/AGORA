@@ -23,14 +23,29 @@ function getChainFromRpc(rpcUrl: string) {
 function callOnchainOS(command: string): any {
   try {
     const okApiKey = process.env.OK_API_KEY || "";
-    const result = execSync(`OK_API_KEY=${okApiKey} ~/.local/bin/onchainos ${command}`, {
+    if (!okApiKey) {
+      console.warn("OK_API_KEY not found in environment");
+      return null;
+    }
+    
+    // Use execSync with proper environment variable passing
+    const result = execSync(`~/.local/bin/onchainos ${command}`, {
       encoding: "utf-8",
-      timeout: 10000,
-      env: { ...process.env, OK_API_KEY: okApiKey },
+      timeout: 15000,
+      env: { 
+        ...process.env, 
+        OK_API_KEY: okApiKey,
+        OK_ACCESS_KEY: okApiKey, // Some commands may use this variant
+      },
     });
     return JSON.parse(result);
-  } catch (error) {
-    console.warn(`Onchain OS CLI error for command "${command}":`, error);
+  } catch (error: any) {
+    // Check if it's a JSON parse error (command succeeded but returned non-JSON)
+    if (error.message && error.message.includes('Unexpected')) {
+      console.warn(`Onchain OS CLI returned non-JSON output for command "${command}"`);
+      return null;
+    }
+    console.warn(`Onchain OS CLI error for command "${command}":`, error.message || error);
     return null;
   }
 }
@@ -42,7 +57,8 @@ export async function auditPool(poolAddress: string, rpcUrl: string): Promise<Au
     transport: http(rpcUrl),
   });
 
-  const chainName = chain.id === 1952 ? "xlayer-testnet" : "xlayer";
+  // Use "xlayer" for both testnet and mainnet
+  const chainName = "xlayer";
   
   try {
     console.log(`Auditing pool ${poolAddress} using Onchain OS on ${chain.name}...`);

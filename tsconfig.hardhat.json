@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "target": "ES2020",
+    "noEmit": false,
+    "outDir": "./dist"
+  },
+  "include": ["scripts/**/*.ts", "hardhat.config.ts"],
+  "exclude": ["node_modules"]
+}

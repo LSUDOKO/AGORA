@@ -1,17 +1,17 @@
 {
   "network": "xlayer_testnet",
   "chainId": 1952,
-  "deployer": "",
-  "usdc": "",
+  "deployer": "0x554e528cF22aD648Aae791AD67AD62BeD106e3e3",
+  "usdc": "0x70799d35aC43AD21e106270E14365a9B96BDc993",
   "paymentTokenSymbol": "tUSDC",
   "testTokens": {
-    "TestUSDC": ""
+    "TestUSDC": "0x70799d35aC43AD21e106270E14365a9B96BDc993"
   },
   "contracts": {
-    "AgentRegistry": "",
-    "SkillsRegistry": "",
-    "x402PaymentRouter": "",
-    "LeaderboardTracker": ""
+    "AgentRegistry": "0x9FCe359ab7A590d0491666B1f0873036f119Ef1d",
+    "SkillsRegistry": "0xc24759ec6A8E9006B47a5e7BdA6e13e589D8b841",
+    "x402PaymentRouter": "0x1d449F519D73e6A65cD65F0A29D4771b42f46CaE",
+    "LeaderboardTracker": "0x1C1D38899909A1DAa23c58DB5A798823E31f2ed2"
   },
-  "deployedAt": ""
+  "deployedAt": "2026-04-14T12:45:43.043Z"
 }

@@ -2,12 +2,20 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { getContractAddress } from "viem";
 import hre from "hardhat";
+import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 const MAINNET_USDC = "0x74b7F16337b8972027F6196A17a631aC6dE26d22";
 const TESTNET_USDC_SUPPLY = 1_000_000_000_000;
 
 async function main() {
-  const [deployer] = await hre.ethers.getSigners();
+  // Set network from environment variable
+  const targetNetwork = process.env.HARDHAT_NETWORK || "xlayer_testnet";
+  if (hre.network.name !== targetNetwork) {
+    console.log(`Switching to network: ${targetNetwork}`);
+    hre.changeNetwork(targetNetwork);
+  }
+
+  const [deployer] = await hre.ethers.getSigners() as HardhatEthersSigner[];
   const network = await hre.ethers.provider.getNetwork();
   const chainId = Number(network.chainId);
   const networkName = hre.network.name;

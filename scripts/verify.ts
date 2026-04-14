@@ -15,6 +15,13 @@ async function verifyContract(address: string, constructorArguments: unknown[] =
 }
 
 async function main() {
+  // Set network from environment variable
+  const targetNetwork = process.env.HARDHAT_NETWORK || "xlayer_testnet";
+  if (hre.network.name !== targetNetwork) {
+    console.log(`Switching to network: ${targetNetwork}`);
+    hre.changeNetwork(targetNetwork);
+  }
+
   const chainId = Number((await hre.ethers.provider.getNetwork()).chainId);
   const { contracts, usdc, testTokens, chainId: deploymentChainId } = deploymentData;
 

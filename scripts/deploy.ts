@@ -102,11 +102,13 @@ async function main() {
   };
 
   mkdirSync(join(process.cwd(), "deployments"), { recursive: true });
-  writeFileSync(join(process.cwd(), "deployments", "addresses.json"), `${JSON.stringify(output, null, 2)}\n`);
+  const outputJson = `${JSON.stringify(output, null, 2)}\n`;
+  writeFileSync(join(process.cwd(), "deployments", "addresses.testnet.json"), outputJson);
+  writeFileSync(join(process.cwd(), "deployments", "addresses.json"), outputJson);
 
   console.log("\nDeployment summary:");
   console.table(output.contracts);
-  console.log("Saved deployment addresses to deployments/addresses.json");
+  console.log("Saved deployment addresses to deployments/addresses.testnet.json (and addresses.json for backward compat)");
 }
 
 main().catch((error) => {

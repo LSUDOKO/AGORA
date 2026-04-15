@@ -45,7 +45,7 @@ export const wagmiConfig = createConfig({
   chains: [xlayerTestnet, xlayer],
   connectors: [injectedWithAttribution()],
   transports: {
-    [xlayerTestnet.id]: http(process.env.NEXT_PUBLIC_RPC_URL || "https://testrpc.xlayer.tech/terigon"),
+    [xlayerTestnet.id]: http(process.env.NEXT_PUBLIC_RPC_URL || "https://xlayertestrpc.okx.com"),
     [xlayer.id]: http("https://rpc.xlayer.tech"),
   },
 });

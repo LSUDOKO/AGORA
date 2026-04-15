@@ -18,18 +18,18 @@ const SKILLS = [
     priceUSDC: 100_000,
   },
   {
-    name: "Onchain Analyst",
-    description: "Analyzes on-chain wallet and protocol signals for decision support.",
+    name: "Portfolio Tracker",
+    description: "Tracks the agent wallet, balances, and payment token exposure across testnet flows.",
     priceUSDC: 300_000,
   },
   {
-    name: "Arb Scanner",
-    description: "Scans cross-pool inefficiencies and arbitrage windows on X Layer.",
+    name: "Market Sentiment Analyzer",
+    description: "Combines price action, volume, and risk metadata into a tradeability score.",
     priceUSDC: 400_000,
   },
   {
-    name: "Liquidation Watch",
-    description: "Monitors liquidation risk and profitable liquidation opportunities.",
+    name: "Liquidity Monitor",
+    description: "Tracks pool depth and estimated APY shifts across the current opportunity set.",
     priceUSDC: 250_000,
   },
 ] as const;

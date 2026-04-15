@@ -1,6 +1,5 @@
-import { createPublicClient, formatUnits, http, parseAbi } from "viem";
-import { xlayer, xlayerTestnet } from "../../frontend/lib/chain";
-import { execSync } from "node:child_process";
+import { parseAbi } from "viem";
+import { callOnchainOS, createChainPublicClient, getChainFromRpc } from "./shared";
 
 export interface YieldOpportunity {
   poolAddress: `0x${string}`;
@@ -24,10 +23,6 @@ const pairAbi = parseAbi([
 const MAINNET_USDC = "0x74b7F16337b8972027F6196A17a631aC6dE26d22";
 const MAINNET_WETH = "0x5A77f1443D16ee5761d310e38b62f77f726bC71c";
 
-function getChainFromRpc(rpcUrl: string) {
-  return rpcUrl.includes("testrpc") ? xlayerTestnet : xlayer;
-}
-
 function calculateEstimatedApy(liquidity: bigint, reserve0: bigint, reserve1: bigint): number {
   const totalValue = Number(reserve0 + reserve1) / 1e6;
   const liq = Number(liquidity > 0n ? liquidity : 1n) / 1e6;
@@ -35,42 +30,9 @@ function calculateEstimatedApy(liquidity: bigint, reserve0: bigint, reserve1: bi
   return Number((6 + utilization * 4.2).toFixed(2));
 }
 
-function callOnchainOS(command: string): any {
-  try {
-    const okApiKey = process.env.OK_API_KEY || "";
-    if (!okApiKey) {
-      console.warn("OK_API_KEY not found in environment");
-      return null;
-    }
-    
-    // Use execSync with proper environment variable passing
-    const result = execSync(`~/.local/bin/onchainos ${command}`, {
-      encoding: "utf-8",
-      timeout: 15000,
-      env: { 
-        ...process.env, 
-        OK_API_KEY: okApiKey,
-        OK_ACCESS_KEY: okApiKey, // Some commands may use this variant
-      },
-    });
-    return JSON.parse(result);
-  } catch (error: any) {
-    // Check if it's a JSON parse error (command succeeded but returned non-JSON)
-    if (error.message && error.message.includes('Unexpected')) {
-      console.warn(`Onchain OS CLI returned non-JSON output for command "${command}"`);
-      return null;
-    }
-    console.warn(`Onchain OS CLI error for command "${command}":`, error.message || error);
-    return null;
-  }
-}
-
 export async function findYield(rpcUrl: string): Promise<YieldOpportunity[]> {
   const chain = getChainFromRpc(rpcUrl);
-  const publicClient = createPublicClient({
-    chain,
-    transport: http(rpcUrl),
-  });
+  const publicClient = createChainPublicClient(rpcUrl);
 
   const opportunities: YieldOpportunity[] = [];
 
@@ -80,8 +42,6 @@ export async function findYield(rpcUrl: string): Promise<YieldOpportunity[]> {
   try {
     console.log(`Fetching liquidity pools from Onchain OS for USDC on ${chain.name}...`);
     
-    // Always use mainnet USDC address for Onchain OS queries since it has the real pool data
-    // The chain.id check is only for determining which token to use in actual swaps
     const usdcAddress = MAINNET_USDC;
     
     const liquidityData = callOnchainOS(`token liquidity --address ${usdcAddress} --chain ${chainName}`);
@@ -96,41 +56,32 @@ export async function findYield(rpcUrl: string): Promise<YieldOpportunity[]> {
         try {
           const poolAddress = pool.poolAddress as `0x${string}`;
           
-          // Extract token addresses from liquidity amounts
           const token0Address = usdcAddress as `0x${string}`;
-          const token1Symbol = pool.liquidityAmount?.[1]?.tokenSymbol || "UNKNOWN";
+          const token1Address = MAINNET_WETH as `0x${string}`;
           
-          // For simplicity, use pool address as token1 (in production, would need proper token lookup)
-          const token1Address = poolAddress;
-          
-          // Parse liquidity USD value
           const liquidityUsd = parseFloat(pool.liquidityUsd || "0");
-          
-          // Get price info for APY calculation
           const priceData = callOnchainOS(`token price-info --address ${token0Address} --chain ${chainName}`);
           
-          let estimatedAPY = 8.5; // Default APY
+          let estimatedAPY = 8.5;
           if (priceData && priceData.ok && priceData.data) {
-            // Calculate APY based on volume and liquidity
             const volume24h = parseFloat(priceData.data.volume24h || "0");
             if (liquidityUsd > 0) {
-              const dailyFeeRate = (volume24h * 0.003) / liquidityUsd; // 0.3% fee tier
+              const dailyFeeRate = (volume24h * 0.003) / liquidityUsd;
               estimatedAPY = Number((dailyFeeRate * 365 * 100).toFixed(2));
             }
           }
           
-          // Parse fee percentage
           const feePercent = pool.liquidityProviderFeePercent || "0.3%";
-          const feeValue = parseFloat(feePercent.replace('%', '')) * 100; // Convert to basis points
+          const feeValue = parseFloat(feePercent.replace('%', '')) * 100;
           
           opportunities.push({
             poolAddress,
             token0: token0Address,
             token1: token1Address,
             fee: Math.round(feeValue),
-            liquidity: BigInt(Math.floor(liquidityUsd * 1e6)), // Convert USD to base units
+            liquidity: BigInt(Math.floor(liquidityUsd * 1e6)),
             estimatedAPY,
-            amount: 1_000_000n, // 1 USDC
+            amount: 1_000_000n,
             reserve0: pool.liquidityAmount?.[0]?.tokenAmount || "0",
             reserve1: pool.liquidityAmount?.[1]?.tokenAmount || "0",
           });

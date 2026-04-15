@@ -1,5 +1,11 @@
-import deploymentData from "../deployments/addresses.json";
+import deploymentData from "../deployments/addresses.testnet.json";
 import { erc20Abi, parseAbi } from "viem";
+
+if (deploymentData.chainId !== 1952) {
+  throw new Error(
+    `Invalid deployment file: expected chainId 1952 (X Layer testnet), got ${deploymentData.chainId}`,
+  );
+}
 
 export const addresses = {
   agentRegistry: deploymentData.contracts.AgentRegistry as `0x${string}`,

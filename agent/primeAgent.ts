@@ -1,5 +1,10 @@
 import { config as loadEnv } from "dotenv";
 import deploymentData from "../deployments/addresses.json";
+import { AgentOrchestrator } from "./multiAgent";
+import { analyzeGas } from "./skills/gasOptimizer";
+import { monitorLiquidity } from "./skills/liquidityMonitor";
+import { analyzeMarketSentiment } from "./skills/marketSentiment";
+import { trackPortfolio } from "./skills/portfolioTracker";
 import { auditPool, type AuditResult } from "./skills/riskAuditor";
 import { findYield, type YieldOpportunity } from "./skills/yieldFinder";
 import {
@@ -11,9 +16,9 @@ import {
   parseUnits,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { xlayer, xlayerTestnet } from "../frontend/lib/chain";
-import { extractQuotedAmount, UniswapClient } from "../lib/uniswapClient";
-import { getUniswapRouter } from "../lib/uniswap";
+import { xlayerTestnet } from "../frontend/lib/chain";
+import { TESTNET_CHAIN_ID, resolvePaymentToken, resolveRpcUrl, resolveTestnetSwapTokenIn } from "../lib/agentConfig";
+import { UniswapExecutionService } from "../lib/uniswapExecution";
 
 loadEnv();
 
@@ -40,23 +45,18 @@ const paymentRouterAbi = parseAbi([
 const RISK_AUDITOR_SKILL_ID = 2n;
 const RISK_AUDITOR_PRICE = 500_000n;
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function isConfiguredAddress(value: string | undefined): value is `0x${string}` {
   return Boolean(value && /^0x[a-fA-F0-9]{40}$/.test(value));
 }
 
 export class PrimeAgent {
   public agentId: bigint | null = null;
-  private readonly chain = Number(process.env.NEXT_PUBLIC_CHAIN_ID || deploymentData.chainId || 1952) === 196 ? xlayer : xlayerTestnet;
-  private readonly rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || this.chain.rpcUrls.default.http[0];
+  private readonly chain = xlayerTestnet;
+  private readonly rpcUrl = resolveRpcUrl();
   private readonly account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
   private readonly publicClient = createPublicClient({ chain: this.chain, transport: http(this.rpcUrl) });
   private readonly walletClient = createWalletClient({ account: this.account, chain: this.chain, transport: http(this.rpcUrl) });
-  private readonly uniswapClient = new UniswapClient(process.env.UNISWAP_API_KEY || "");
-  private readonly routerAddress = getUniswapRouter(this.chain.id);
+  private readonly uniswapExecution = new UniswapExecutionService();
   private readonly addresses = {
     agentRegistry: deploymentData.contracts.AgentRegistry as `0x${string}`,
     paymentRouter: deploymentData.contracts.x402PaymentRouter as `0x${string}`,
@@ -67,8 +67,8 @@ export class PrimeAgent {
     if (!process.env.PRIVATE_KEY) {
       throw new Error("PRIVATE_KEY is required to run PrimeAgent");
     }
-    if (!process.env.UNISWAP_API_KEY) {
-      console.warn("UNISWAP_API_KEY is missing. Uniswap execution will fail.");
+    if (Number(process.env.NEXT_PUBLIC_CHAIN_ID || deploymentData.chainId || TESTNET_CHAIN_ID) !== TESTNET_CHAIN_ID) {
+      throw new Error(`PrimeAgent only supports X Layer testnet (${TESTNET_CHAIN_ID}) in this build.`);
     }
     if (
       !isConfiguredAddress(this.addresses.agentRegistry) ||
@@ -105,8 +105,17 @@ export class PrimeAgent {
     await this.ensureAgentId();
     console.log(`PrimeAgent started for agentId=${this.agentId?.toString()} address=${this.account.address}`);
     console.log(`Running on chain ${this.chain.id} (${this.chain.name})`);
+    const [gas, liquidity, portfolio] = await Promise.all([
+      analyzeGas(this.rpcUrl),
+      monitorLiquidity(this.rpcUrl),
+      trackPortfolio(this.rpcUrl, this.account.address, resolvePaymentToken()),
+    ]);
+    const sentiment = await analyzeMarketSentiment(resolveTestnetSwapTokenIn());
+    console.log(`Gas: ${gas.gasPriceGwei} gwei (${gas.executionBand})`);
+    console.log(`Liquidity: ${liquidity.summary}`);
+    console.log(`Portfolio: ${portfolio.formattedBalance} ${portfolio.symbol}`);
+    console.log(`Sentiment: ${sentiment.label} (${sentiment.score})`);
 
-    // Run one cycle for testing
     try {
       const opportunity = await this.scanForYield();
       if (opportunity) {
@@ -124,7 +133,7 @@ export class PrimeAgent {
     }
 
     console.log("\nTest cycle complete. Agent is working correctly!");
-    console.log("To run continuously, uncomment the while loop in primeAgent.ts");
+    console.log("This build is locked to testnet-only execution.");
   }
 
   async scanForYield(): Promise<Opportunity | null> {
@@ -154,11 +163,71 @@ export class PrimeAgent {
         return auditPool(opportunity.poolAddress, this.rpcUrl);
       }
 
-      // Note: On testnet, skills are registered by the same wallet, so x402 payment will fail with "self hire not allowed"
-      // In production, skills would be registered by different providers
-      console.log("Running risk audit directly (x402 payment requires different skill provider)...");
+      // Check if a separate provider wallet is configured
+      if (!process.env.PROVIDER_PRIVATE_KEY) {
+        console.warn("PROVIDER_PRIVATE_KEY not set. Running risk audit directly (no x402 payment).");
+        const auditResult = await auditPool(opportunity.poolAddress, this.rpcUrl);
+        console.log(`Risk Audit complete: score=${auditResult.score} passed=${auditResult.passed}`);
+        return auditResult;
+      }
+
+      // Derive provider address and check for self-hire
+      const providerAccount = privateKeyToAccount(process.env.PROVIDER_PRIVATE_KEY as `0x${string}`);
+      if (providerAccount.address.toLowerCase() === this.account.address.toLowerCase()) {
+        console.warn("PROVIDER_PRIVATE_KEY resolves to the same address as the agent owner. Self-hire detected — falling back to direct audit (no payment).");
+        const auditResult = await auditPool(opportunity.poolAddress, this.rpcUrl);
+        console.log(`Risk Audit complete: score=${auditResult.score} passed=${auditResult.passed}`);
+        return auditResult;
+      }
+
+      // Real x402 payment flow
+      const agentId = this.agentId ?? (await this.ensureAgentId());
+      console.log(`Executing x402 payment flow: agent=${this.account.address} provider=${providerAccount.address}`);
+
+      // Step 1: Approve USDC spending
+      const approveHash = await this.walletClient.writeContract({
+        address: this.addresses.usdc,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [this.addresses.paymentRouter, RISK_AUDITOR_PRICE],
+        account: this.account,
+      });
+      await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
+      console.log(`USDC approved for payment router: ${approveHash}`);
+
+      // Step 2: Hire the skill — get receipt count before to derive receipt ID
+      const receiptCountBefore = await this.publicClient.readContract({
+        address: this.addresses.paymentRouter,
+        abi: paymentRouterAbi,
+        functionName: "receiptCount",
+      });
+
+      const hireHash = await this.walletClient.writeContract({
+        address: this.addresses.paymentRouter,
+        abi: paymentRouterAbi,
+        functionName: "hireSkill",
+        args: [agentId, RISK_AUDITOR_SKILL_ID],
+        account: this.account,
+      });
+      await this.publicClient.waitForTransactionReceipt({ hash: hireHash });
+      const receiptId = receiptCountBefore + 1n;
+      console.log(`Skill hired via x402. receiptId=${receiptId} tx=${hireHash}`);
+
+      // Step 3: Run the audit
       const auditResult = await auditPool(opportunity.poolAddress, this.rpcUrl);
       console.log(`Risk Audit complete: score=${auditResult.score} passed=${auditResult.passed}`);
+
+      // Step 4: Mark the receipt as completed
+      const completeHash = await this.walletClient.writeContract({
+        address: this.addresses.paymentRouter,
+        abi: paymentRouterAbi,
+        functionName: "markCompleted",
+        args: [receiptId],
+        account: this.account,
+      });
+      await this.publicClient.waitForTransactionReceipt({ hash: completeHash });
+      console.log(`Receipt ${receiptId} marked completed: ${completeHash}`);
+
       return auditResult;
     } catch (error) {
       console.error("hireRiskAuditor failed:", error);
@@ -181,61 +250,17 @@ export class PrimeAgent {
         `Execution ready: pool=${opportunity.poolAddress} apy=${opportunity.estimatedAPY}% auditScore=${auditResult.score}`,
       );
 
-      if (!this.routerAddress) {
-        throw new Error(`Uniswap router address not found for chain ${this.chain.id}`);
+      const prepared = await this.uniswapExecution.prepareSwap();
+      console.log(`Step 1: Quote received. Amount out=${prepared.quoteAmountOut} minOut=${prepared.minAmountOut}`);
+      console.log(`Step 2: Prepared swap target ${prepared.swapTarget}`);
+
+      if (!this.uniswapExecution.getEnvironment().execute) {
+        console.log("UNISWAP_EXECUTE is false. Skipping broadcast and treating this cycle as a dry-run.");
+        return;
       }
 
-      const amountIn = opportunity.amount;
-      const tokenIn = opportunity.token0;
-      const tokenOut = opportunity.token1;
-
-      console.log(`Step 1: Checking approval for ${tokenIn} to router ${this.routerAddress}...`);
-      const approvalData = await this.uniswapClient.checkApproval(
-        tokenIn,
-        amountIn.toString(),
-        this.account.address,
-        this.chain.id,
-      );
-
-      if (approvalData.approval) {
-        console.log(`Approval needed for ${tokenIn}. Sending approval tx...`);
-        const approveHash = await this.walletClient.sendTransaction({
-          to: approvalData.approval.to,
-          data: approvalData.approval.data,
-          value: BigInt(approvalData.approval.value || 0),
-          account: this.account,
-        });
-        await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
-        console.log(`Approval confirmed: ${approveHash}`);
-      }
-
-      console.log(`Step 2: Getting quote for ${formatUnits(amountIn, 6)} tokens...`);
-      const quote = await this.uniswapClient.getQuote({
-        tokenIn,
-        tokenOut,
-        amount: amountIn.toString(),
-        type: "EXACT_INPUT",
-        swapper: this.account.address,
-        protocols: ["V3"],
-        chainId: this.chain.id,
-      });
-
-      console.log(`Quote received. Estimated amount out: ${extractQuotedAmount(quote) ?? "unavailable"}`);
-
-      console.log(`Step 3: Generating swap transaction...`);
-      const swapData = await this.uniswapClient.getSwap({
-        quote: quote.quote,
-      });
-
-      console.log(`Step 4: Executing swap...`);
-      const swapHash = await this.walletClient.sendTransaction({
-        to: swapData.swap.to,
-        data: swapData.swap.data,
-        value: BigInt(swapData.swap.value || 0),
-        account: this.account,
-      });
-      await this.publicClient.waitForTransactionReceipt({ hash: swapHash });
-      console.log(`Swap confirmed! tx=${swapHash}`);
+      const receipt = await this.uniswapExecution.executePreparedSwap(prepared);
+      console.log(`Swap confirmed! tx=${receipt.transactionHash}`);
 
       if (agentId > 0n && isConfiguredAddress(this.addresses.agentRegistry) && isConfiguredAddress(this.addresses.usdc)) {
         const txHash = await this.walletClient.writeContract({
@@ -278,9 +303,19 @@ export class PrimeAgent {
 }
 
 if (require.main === module) {
-  const agent = new PrimeAgent();
-  agent.run().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
+  if (process.env.MULTI_AGENT === "true") {
+    const rpcUrl = resolveRpcUrl();
+    console.log("MULTI_AGENT=true: starting AgentOrchestrator...");
+    const orchestrator = new AgentOrchestrator();
+    orchestrator.start(rpcUrl).catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
+  } else {
+    const agent = new PrimeAgent();
+    agent.run().catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
+  }
 }

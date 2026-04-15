@@ -23,6 +23,14 @@ export const universalRouterAbi = parseAbi([
   "function execute(bytes commands, bytes[] inputs, uint256 deadline)",
 ]);
 
+export const uniswapV3SwapRouterAbi = parseAbi([
+  "function exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)",
+]);
+
+export const uniswapV3QuoterAbi = parseAbi([
+  "function quoteExactInputSingle(address tokenIn,address tokenOut,uint24 fee,uint256 amountIn,uint160 sqrtPriceLimitX96) returns (uint256 amountOut)",
+]);
+
 export function getUniswapRouter(chainId: number): `0x${string}` | null {
   if (chainId === 196) return UNISWAP_XLAYER.universalRouterV211;
   if (chainId === 1952) return UNISWAP_XLAYER_TESTNET.universalRouterV2;

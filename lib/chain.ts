@@ -14,7 +14,7 @@ export const xlayerTestnet = defineChain({
   nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
   rpcUrls: {
     default: {
-      http: ["https://testrpc.xlayer.tech/terigon"],
+      http: ["https://xlayertestrpc.okx.com"],
       webSocket: ["wss://xlayertestws.okx.com"],
     },
   },

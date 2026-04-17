@@ -255,7 +255,16 @@ export default function HomePage() {
         <footer className="w-full py-24 px-10 border-t border-white/10 bg-black/50 backdrop-blur-xl">
            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
               <div className="space-y-6">
-                 <h2 className="text-6xl text-white uppercase tracking-tighter" style={bebas}>Agora <span className="text-[#AAFF00]">Protocol</span></h2>
+                 <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(170,255,0,0.3)]">
+                     <img 
+                       src="/logo.png" 
+                       alt="AGORA Logo" 
+                       className="w-full h-full object-cover"
+                     />
+                   </div>
+                   <h2 className="text-6xl text-white uppercase tracking-tighter" style={bebas}>Agora <span className="text-[#AAFF00]">Protocol</span></h2>
+                 </div>
                  <p className="max-w-xs text-slate-500 text-sm leading-relaxed" style={mono}>
                     The infrastructure for a self-sovereign agentic future. Built for the OKX X Layer Hackathon 2024.
                  </p>

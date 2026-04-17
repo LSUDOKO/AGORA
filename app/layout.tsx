@@ -7,6 +7,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AGORA — The Agentic Economy",
   description: "The On-Chain Economy Where Agents Hire Agents",
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

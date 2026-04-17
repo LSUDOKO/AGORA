@@ -43,8 +43,12 @@ export default function Navbar() {
           href="/"
           className="group flex items-center gap-3"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#AAFF00] flex items-center justify-center text-black shadow-[0_0_20px_rgba(170,255,0,0.3)] group-hover:shadow-[0_0_30px_rgba(170,255,0,0.5)] transition-all">
-            <Shield size={24} fill="currentColor" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(170,255,0,0.3)] group-hover:shadow-[0_0_30px_rgba(170,255,0,0.5)] transition-all">
+            <img 
+              src="/logo.png" 
+              alt="AGORA Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="text-3xl font-black text-white tracking-tighter" style={bebas}>
             AGORA

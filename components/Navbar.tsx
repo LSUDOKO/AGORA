@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { shortAddress, toXkoAddress } from "../lib/address";
-import { Menu, X, Wallet, Shield } from "lucide-react";
+import { Menu, X, Wallet, Shield, AlertCircle } from "lucide-react";
+import { ACTIVE_CHAIN } from "../lib/chain";
 
 const navItems = [
   { href: "/", label: "HOME" },
@@ -23,6 +24,8 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" };
 export default function Navbar() {
   const pathname = usePathname();
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const [mounted, setMounted] = useState(false);
@@ -78,6 +81,16 @@ export default function Navbar() {
         {/* Wallet section */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-4">
+            {mounted && isConnected && chainId !== ACTIVE_CHAIN.id && (
+              <button
+                onClick={() => switchChain({ chainId: ACTIVE_CHAIN.id })}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all text-[10px] font-bold uppercase tracking-widest"
+                style={mono}
+              >
+                <AlertCircle size={14} />
+                WRONG_NETWORK: SWITCH_TO_X_LAYER
+              </button>
+            )}
             {mounted && isConnected ? (
               <div className="flex items-center gap-4 p-1 rounded-2xl bg-white/[0.02] border border-white/10">
                 <div className="px-4 py-1.5 text-right">

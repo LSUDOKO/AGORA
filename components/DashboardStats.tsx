@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatUnits } from "viem";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
-import { agentRegistryAbi, addresses, paymentRouterAbi, usdcAbi } from "../lib/contracts";
+import { agentRegistryAbi, addresses, leaderboardAbi, usdcAbi } from "../lib/contracts";
 import StatCard from "./StatCard";
 
 export default function DashboardStats() {
@@ -40,9 +40,10 @@ export default function DashboardStats() {
               args: [agentId],
             },
             {
-              address: addresses.paymentRouter,
-              abi: paymentRouterAbi,
-              functionName: "receiptCount",
+              address: addresses.leaderboard,
+              abi: leaderboardAbi,
+              functionName: "activities",
+              args: [agentId],
             },
             {
               address: addresses.usdc,
@@ -58,13 +59,14 @@ export default function DashboardStats() {
   const agentTuple = data?.[0]?.result as [string, string, bigint, bigint] | undefined;
   const totalTxns = agentTuple?.[2] || 0n;
   const totalEarned = agentTuple?.[3] || 0n;
-  const totalReceipts = (data?.[1]?.result as bigint | undefined) || 0n;
+  const activityTuple = data?.[1]?.result as [bigint, bigint, bigint] | undefined;
+  const totalHires = activityTuple?.[1] || 0n;
   const usdcBalance = (data?.[2]?.result as bigint | undefined) || 0n;
 
   const stats = [
     { label: "Total Earned ($)", value: `$${formatUnits(totalEarned, 6)}`, helper: "Recorded in AgentRegistry" },
     { label: "Txns Today", value: totalTxns.toString(), helper: "Prime Agent transaction count" },
-    { label: "Skills Hired", value: totalReceipts.toString(), helper: "x402 receipts issued on-chain" },
+    { label: "Skills Hired", value: totalHires.toString(), helper: "x402 hires recorded for this agent" },
     { label: "Payment Token", value: `${formatUnits(usdcBalance, 6)}`, helper: "Wallet USDC/tUSDC balance" },
   ];
 
@@ -86,4 +88,3 @@ export default function DashboardStats() {
     </section>
   );
 }
-

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useAccount, useReadContract, useWriteContract, useBalance, usePublicClient } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, usePublicClient, useChainId, useSwitchChain } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { formatUnits } from "viem";
 import { addresses, skillsRegistryAbi, paymentRouterAbi, usdcAbi } from "../../lib/contracts";
 import { wagmiConfig } from "../../lib/wagmiConfig";
+import { getTxExplorerUrl } from "../../lib/explorer";
+import { ACTIVE_CHAIN } from "../../lib/chain";
 import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import RegisterSkillForm from "../../components/RegisterSkillForm";
 import { 
@@ -41,16 +43,10 @@ interface Strategy {
   preferredProtocols: string[];
 }
 
-const ACTIVE_CHAIN = {
-  id: 1952,
-  name: "X Layer Testnet",
-  nativeCurrency: { name: "OKB", symbol: "OKB", decimals: 18 },
-  rpcUrls: { default: { http: ["https://xlayer-testnet.okx.com"] } },
-  blockExplorers: { default: { name: "XLayerScan", url: "https://www.okx.com/explorer/xlayer" } },
-};
-
 export default function MarketplacePage() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
   const publicClient = usePublicClient();
   const gridRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,9 +59,21 @@ export default function MarketplacePage() {
   const [skillsLoading, setSkillsLoading] = useState(true);
   const [skillsError, setSkillsError] = useState("");
   const [txState, setTxState] = useState<Record<string, "idle" | "approving" | "broadcasting" | "done" | "error">>({});
-  const [txHash, setTxHash] = useState<Record<string, string>>({});
+  const [txHash, setTxHash] = useState<Record<string, string | undefined>>({});
   const [error, setError] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ name: "", description: "", riskThreshold: 50, preferredProtocols: "" });
+
+  const trackEvent = async (event: string, data: any) => {
+    try {
+      await fetch("/api/agent/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, data })
+      });
+    } catch (e) {
+      console.warn("Telemetry track failed", e);
+    }
+  };
 
   const { writeContractAsync } = useWriteContract();
 
@@ -85,13 +93,15 @@ export default function MarketplacePage() {
     query: { enabled: !!address },
   });
 
-  const { data: usdcBalanceData } = useBalance({
-    address: address,
-    token: addresses.testUsdc || addresses.usdc,
-    query: { refetchInterval: 5000 },
+  const { data: usdcBalanceData } = useReadContract({
+    address: addresses.testUsdc || addresses.usdc,
+    abi: usdcAbi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 5000 },
   });
 
-  const usdcBalance = usdcBalanceData?.value || 0n;
+  const usdcBalance = usdcBalanceData || 0n;
 
   const loadSkills = useCallback(async () => {
     if (!publicClient) return;
@@ -157,16 +167,6 @@ export default function MarketplacePage() {
     loadSkills();
   }, [loadSkills]);
 
-  useEffect(() => {
-    if (!publicClient) return;
-
-    const interval = window.setInterval(() => {
-      loadSkills();
-    }, 5000);
-
-    return () => window.clearInterval(interval);
-  }, [loadSkills, publicClient]);
-
   // Actions
   const hireSkill = async (skill: Skill) => {
     if (!agentId || agentId === 0n) {
@@ -177,6 +177,17 @@ export default function MarketplacePage() {
     try {
       const id = skill.skillId.toString();
       setError(prev => ({ ...prev, [id]: "" }));
+
+      // Network check
+      if (chainId !== ACTIVE_CHAIN.id) {
+        try {
+          await switchChainAsync({ chainId: ACTIVE_CHAIN.id });
+        } catch (error) {
+          console.error("Failed to switch network:", error);
+          setError(prev => ({ ...prev, [id]: "SWITCH_NETWORK_FAILED" }));
+          return;
+        }
+      }
       
       // Check allowance
       setTxState(prev => ({ ...prev, [id]: "approving" }));
@@ -211,6 +222,7 @@ export default function MarketplacePage() {
       }
 
       setTxState(prev => ({ ...prev, [id]: "done" }));
+      trackEvent("skill:hired", { skillId: skill.skillId.toString(), agentId: agentId.toString(), txHash: hash, amount: formatUnits(skill.priceUSDC, 6) });
       loadSkills();
     } catch (err: unknown) {
       console.error(err);
@@ -338,22 +350,28 @@ export default function MarketplacePage() {
                        onClick={async () => {
                          if (!address) return;
                          setTxState(prev => ({ ...prev, "faucet": "broadcasting" }));
+                         setError(prev => ({ ...prev, faucet: "" }));
                          try {
                            const res = await fetch("/api/faucet", {
                              method: "POST",
                              headers: { "Content-Type": "application/json" },
                              body: JSON.stringify({ address })
                            });
-                           if (!res.ok) throw new Error("Faucet failed");
                            const data = await res.json();
+                           if (!res.ok) throw new Error(data.error || "Faucet failed");
                            setTxHash(prev => ({ ...prev, "faucet": data.hash }));
                            setTxState(prev => ({ ...prev, "faucet": "done" }));
+                           trackEvent("faucet:mint", { address, txHash: data.hash, amount: data.amount });
                            setTimeout(() => {
                              setTxState(prev => ({ ...prev, "faucet": "idle" }));
                              setTxHash(prev => ({ ...prev, "faucet": undefined }));
                            }, 10000);
                          } catch (e) {
                            console.error(e);
+                           setError(prev => ({
+                             ...prev,
+                             faucet: e instanceof Error ? e.message : "Faucet failed",
+                           }));
                            setTxState(prev => ({ ...prev, "faucet": "error" }));
                          }
                        }}
@@ -376,6 +394,22 @@ export default function MarketplacePage() {
                     </div>
                   )}
                 </div>
+                {error.faucet ? (
+                  <p className="mt-3 text-[10px] font-bold tracking-widest uppercase text-rose-400" style={mono}>
+                    {error.faucet}
+                  </p>
+                ) : null}
+                {txHash.faucet ? (
+                  <a
+                    href={getTxExplorerUrl(txHash.faucet)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-cyan-300 underline"
+                    style={mono}
+                  >
+                    Faucet Tx <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : null}
                 {/* Glow Effect */}
                 <div className="absolute -inset-px bg-gradient-to-br from-[#AAFF00]/10 to-transparent rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </div>
@@ -407,6 +441,13 @@ export default function MarketplacePage() {
             <h2 className="text-4xl text-white uppercase tracking-tight" style={bebas}>Capability <span className="text-[#AAFF00]">Matrix</span></h2>
             <div className="flex items-center gap-6">
                <div className="text-[10px] text-slate-500 font-bold tracking-[0.3em]" style={mono}>{skills.length}_MODULES_DETECTED</div>
+               <button
+                 onClick={() => loadSkills()}
+                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                 style={mono}
+               >
+                 REFRESH_MATRIX
+               </button>
                <button 
                  onClick={() => setShowRegisterSkill(true)}
                  className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[#AAFF00] text-black text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
@@ -416,6 +457,14 @@ export default function MarketplacePage() {
                </button>
             </div>
           </div>
+
+          {skills.length > 0 && skills.every((skill) => address?.toLowerCase() === skill.provider.toLowerCase()) ? (
+            <div className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-6">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-amber-300" style={mono}>
+                All visible skills are owned by the connected wallet. x402 hiring blocks self-hire. Switch to a different wallet to test hiring.
+              </p>
+            </div>
+          ) : null}
 
           {skillsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -446,7 +495,10 @@ export default function MarketplacePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" ref={gridRef}>
-              {skills.map(skill => (
+              {skills.map((skill) => {
+                const skillTxHash = txHash[skill.skillId.toString()];
+
+                return (
                 <div key={skill.skillId.toString()} className="skill-card group relative p-10 rounded-[3rem] border border-white/10 bg-white/[0.03] backdrop-blur-2xl hover:bg-white/[0.06] hover:border-[#AAFF00]/40 transition-all duration-500 flex flex-col gap-8 overflow-hidden">
                   <div className="flex justify-between items-start relative z-10">
                     <div className="p-4 rounded-2xl bg-[#AAFF00]/5 border border-[#AAFF00]/20 group-hover:scale-110 transition-transform">
@@ -503,9 +555,9 @@ export default function MarketplacePage() {
                          {txState[skill.skillId.toString()] === "done" && <CheckCircle2 className="w-4 h-4" />}
                          {btnLabel(skill)}
                        </button>
-                      {txHash[skill.skillId.toString()] && (
+                      {skillTxHash && (
                         <a
-                          href={`${ACTIVE_CHAIN.blockExplorers?.default.url}/tx/${txHash[skill.skillId.toString()]}`}
+                          href={getTxExplorerUrl(skillTxHash)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 text-[10px] text-[#22D3EE] font-bold hover:underline tracking-widest"
@@ -520,7 +572,8 @@ export default function MarketplacePage() {
                   {/* Aesthetic Decorative Elements */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-[#AAFF00]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[#AAFF00]/10 transition-colors" />
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

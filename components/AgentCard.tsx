@@ -1,6 +1,7 @@
 "use client";
 
 import { toXkoAddress } from "../lib/address";
+import { getTxExplorerUrl } from "../lib/explorer";
 import { Zap, Loader2, ShieldCheck, Cpu, ArrowUpRight, Activity } from "lucide-react";
 
 interface AgentCardProps {
@@ -128,7 +129,7 @@ export default function AgentCard({
 
         {txHash ? (
           <a
-            href={`https://www.okx.com/web3/explorer/xlayer-test/tx/${txHash}`}
+            href={getTxExplorerUrl(txHash)}
             target="_blank"
             rel="noreferrer"
             className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#AAFF00] underline"

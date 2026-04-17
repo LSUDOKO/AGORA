@@ -2,17 +2,32 @@
 
 import { useEffect, useState } from "react";
 import AgentCard from "./AgentCard";
-import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useReadContract, useSwitchChain, useWriteContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { agentRegistryAbi, addresses } from "../lib/contracts";
 import { wagmiConfig } from "../lib/wagmiConfig";
+import { ACTIVE_CHAIN } from "../lib/chain";
 
 export default function AgentOverview() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
   const publicClient = usePublicClient();
   const [mounted, setMounted] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const trackEvent = async (event: string, data: any) => {
+    try {
+      await fetch("/api/agent/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, data })
+      });
+    } catch (e) {
+      console.warn("Telemetry track failed", e);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -54,6 +69,16 @@ export default function AgentOverview() {
     setIsProcessing(true);
 
     try {
+      // Network check
+      if (chainId !== ACTIVE_CHAIN.id) {
+        try {
+          await switchChainAsync({ chainId: ACTIVE_CHAIN.id });
+        } catch (error) {
+          console.error("Failed to switch network:", error);
+          throw new Error("Please switch to X Layer Testnet to continue.");
+        }
+      }
+
       const hash = await writeContractAsync({
         address: addresses.agentRegistry,
         abi: agentRegistryAbi,
@@ -70,6 +95,17 @@ export default function AgentOverview() {
       }
 
       await Promise.all([refetchAgentId(), refetchAgentData()]);
+      
+      const eventName = 
+          functionName === "registerAgent" ? "agent:registered" :
+          functionName === "incrementTxCount" ? "agent:tx_increment" :
+          "agent:earnings_recorded";
+      
+      trackEvent(eventName, { 
+        agentId: agentId?.toString(), 
+        txHash: hash, 
+        args: JSON.stringify(args, (_, v) => typeof v === 'bigint' ? v.toString() : v) 
+      });
     } finally {
       setIsProcessing(false);
     }

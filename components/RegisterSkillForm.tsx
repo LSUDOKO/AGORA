@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { useAccount, useChainId, useSwitchChain, useWriteContract, usePublicClient } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { parseUnits } from "viem";
 import { addresses, skillsRegistryAbi } from "../lib/contracts";
 import { wagmiConfig } from "../lib/wagmiConfig";
 import { getTxExplorerUrl } from "../lib/explorer";
+import { ACTIVE_CHAIN } from "../lib/chain";
 import { Rocket, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 
 interface RegisterSkillFormProps {
@@ -19,6 +20,8 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillFormProps) {
   const { address } = useAccount();
+  const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [name, setName] = useState("");
@@ -27,6 +30,18 @@ export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillF
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [txHash, setTxHash] = useState<string | null>(null);
+
+  const trackEvent = async (event: string, data: any) => {
+    try {
+      await fetch("/api/agent/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, data })
+      });
+    } catch (e) {
+      console.warn("Telemetry track failed", e);
+    }
+  };
   
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,6 +51,16 @@ export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillF
     setErrorMessage("");
 
     try {
+      // Network check
+      if (chainId !== ACTIVE_CHAIN.id) {
+        try {
+          await switchChainAsync({ chainId: ACTIVE_CHAIN.id });
+        } catch (error) {
+          console.error("Failed to switch network:", error);
+          throw new Error("Please switch to X Layer Testnet to continue.");
+        }
+      }
+
       const priceUSDC = parseUnits(price, 6);
       
       const hash = await writeContractAsync({
@@ -53,6 +78,7 @@ export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillF
       }
 
       setStatus("done");
+      trackEvent("skill:registered", { name, description, price, txHash: hash });
       onSuccess?.();
       setTimeout(() => {
         onClose();

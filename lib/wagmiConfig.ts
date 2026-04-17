@@ -48,6 +48,7 @@ export const wagmiConfig = createConfig({
     [xlayerTestnet.id]: http(process.env.NEXT_PUBLIC_RPC_URL || "https://xlayertestrpc.okx.com"),
     [xlayer.id]: http("https://rpc.xlayer.tech"),
   },
+  ssr: true,
 });
 
 export const queryClient = new QueryClient();

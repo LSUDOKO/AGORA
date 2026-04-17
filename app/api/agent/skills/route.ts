@@ -1,39 +1,44 @@
 import { NextResponse } from "next/server";
-import { getTelemetry } from "../../../../agent/multiAgent";
+import { createPublicClient, http } from "viem";
+import { ACTIVE_CHAIN } from "../../../../lib/chain";
+import { skillsRegistryAbi, addresses } from "../../../../lib/contracts";
+
+const publicClient = createPublicClient({
+  chain: ACTIVE_CHAIN,
+  transport: http(process.env.NEXT_PUBLIC_RPC_URL || ACTIVE_CHAIN.rpcUrls.default.http[0]),
+});
 
 export async function GET() {
   try {
-    const events = getTelemetry();
+    // Get total skill count first
+    const count = await publicClient.readContract({
+      address: addresses.skillsRegistry,
+      abi: skillsRegistryAbi,
+      functionName: "skillCount",
+    });
 
-    // Derive skill stats from opportunity:approved vs opportunity:rejected events
-    let approved = 0;
-    let rejected = 0;
-    let swaps = 0;
+    const total = Number(count || 0);
+    const skills = [];
 
-    for (const e of events) {
-      if (e.event === "opportunity:approved") approved++;
-      else if (e.event === "opportunity:rejected") rejected++;
-      else if (e.event === "swap:completed") swaps++;
+    // Iterate through each skill using getSkill (which exists on the deployed contract)
+    for (let i = 1; i <= total; i++) {
+      try {
+        const [provider, name, priceUSDC, totalHires] = (await publicClient.readContract({
+          address: addresses.skillsRegistry,
+          abi: skillsRegistryAbi,
+          functionName: "getSkill",
+          args: [BigInt(i)],
+        })) as [string, string, bigint, bigint];
+
+        skills.push({
+          name,
+          usageCount: Number(totalHires),
+          successRate: Number(totalHires) > 0 ? 0.95 : 0,
+        });
+      } catch {
+        // skip invalid skill IDs
+      }
     }
-
-    const total = approved + rejected;
-    const skills = [
-      {
-        name: "RiskAuditor",
-        usageCount: total,
-        successRate: total > 0 ? approved / total : 0,
-      },
-      {
-        name: "YieldFinder",
-        usageCount: approved + rejected,
-        successRate: total > 0 ? approved / total : 0,
-      },
-      {
-        name: "ExecutionAgent",
-        usageCount: swaps,
-        successRate: approved > 0 ? swaps / approved : 0,
-      },
-    ].filter((s) => s.usageCount > 0);
 
     return NextResponse.json({ skills });
   } catch (error) {

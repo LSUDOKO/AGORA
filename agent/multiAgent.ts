@@ -12,13 +12,31 @@ export type TelemetryEvent = {
   data: Record<string, any>;
 };
 
-const MAX_TELEMETRY = 500;
+const MAX_TELEMETRY = 1000;
 
 // Module-level telemetry store shared across all MonitorAgent instances
 const telemetryStore: TelemetryEvent[] = [];
 
 export function getTelemetry(): TelemetryEvent[] {
   return telemetryStore;
+}
+
+export function pushTelemetry(event: string, data: Record<string, any> = {}): TelemetryEvent {
+  const timestamp = Date.now();
+  
+  // Basic normalization for JSON safety
+  const normalizedData = JSON.parse(JSON.stringify(data, (_, v) => 
+    typeof v === 'bigint' ? v.toString() : v
+  ));
+
+  const entry: TelemetryEvent = { event, timestamp, data: normalizedData };
+  telemetryStore.push(entry);
+
+  if (telemetryStore.length > MAX_TELEMETRY) {
+    telemetryStore.splice(0, telemetryStore.length - MAX_TELEMETRY);
+  }
+
+  return entry;
 }
 
 // ─── YieldHunterAgent ────────────────────────────────────────────────────────

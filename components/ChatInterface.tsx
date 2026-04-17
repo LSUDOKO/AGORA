@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, Cpu, User, Loader2, MessageSquare, Shield, RefreshCw } from "lucide-react";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { Send, Cpu, User, Loader2, MessageSquare, Shield, RefreshCw, ExternalLink, Sparkles } from "lucide-react";
+import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { agentRegistryAbi, addresses } from "../lib/contracts";
+import { wagmiConfig } from "../lib/wagmiConfig";
+import { getTxExplorerUrl } from "../lib/explorer";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,15 +19,18 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 export default function ChatInterface() {
   const { address } = useAccount();
+  const publicClient = usePublicClient();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: 'PROTOCOL_ONLINE: Welcome to AGORA. I am your orchestration layer.\n\nTry commands:\n> find high_yield_skills\n> audit 0x_security_node\n> set risk_profile balanced\n> check network_activity',
+      content: 'PROTOCOL_ONLINE: Welcome to AGORA. I am your orchestration layer.\n\nTry commands:\n> find opportunities\n> audit 0x1234...\n> set risk 70\n> check portfolio\n> status\n> history',
       timestamp: Date.now(),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [syncHash, setSyncHash] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Contract state
@@ -36,16 +42,32 @@ export default function ChatInterface() {
     query: { enabled: !!address },
   });
 
-  const { writeContract, isPending: isSyncing } = useWriteContract();
+  const { writeContractAsync, isPending: isSyncing } = useWriteContract();
 
-  const handleSync = () => {
+  const handleSync = async () => {
     if (!agentId || agentId === 0n) return;
-    writeContract({
-      address: addresses.agentRegistry,
-      abi: agentRegistryAbi,
-      functionName: "incrementTxCount",
-      args: [agentId],
-    });
+
+    try {
+      setSyncMessage("Broadcasting sync receipt...");
+      const hash = await writeContractAsync({
+        address: addresses.agentRegistry,
+        abi: agentRegistryAbi,
+        functionName: "incrementTxCount",
+        args: [agentId],
+      });
+      setSyncHash(hash);
+
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+      } else {
+        await waitForTransactionReceipt(wagmiConfig, { hash });
+      }
+
+      setSyncMessage("Agent telemetry synced on-chain.");
+    } catch (error) {
+      console.error(error);
+      setSyncMessage(error instanceof Error ? error.message : "Failed to sync telemetry.");
+    }
   };
 
   useEffect(() => {
@@ -73,7 +95,7 @@ export default function ChatInterface() {
       
       // Auto-sync on certain commands if agent exists
       if (agentId && agentId > 0n && (text.toLowerCase().includes("find") || text.toLowerCase().includes("audit"))) {
-        handleSync();
+        await handleSync();
       }
     } catch {
       setMessages((prev) => [
@@ -90,6 +112,10 @@ export default function ChatInterface() {
       e.preventDefault();
       sendMessage();
     }
+  }
+
+  function applyPrompt(prompt: string) {
+    setInput(prompt);
   }
 
   return (
@@ -113,7 +139,7 @@ export default function ChatInterface() {
         <div className="flex items-center gap-4">
            {agentId && agentId > 0n && (
              <button 
-               onClick={handleSync}
+               onClick={() => void handleSync()}
                disabled={isSyncing}
                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#AAFF00]/10 border border-[#AAFF00]/20 text-[#AAFF00] text-[10px] font-bold uppercase tracking-widest hover:bg-[#AAFF00]/20 transition-all disabled:opacity-50"
                style={mono}
@@ -131,6 +157,25 @@ export default function ChatInterface() {
 
       {/* Message list */}
       <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+        <div className="flex flex-wrap gap-3">
+          {[
+            "find opportunities",
+            "check portfolio",
+            "status",
+            "history",
+          ].map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => applyPrompt(prompt)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-300 transition hover:border-[#AAFF00]/30 hover:text-[#AAFF00]"
+              style={mono}
+            >
+              <Sparkles size={12} />
+              {prompt}
+            </button>
+          ))}
+        </div>
+
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`flex items-end gap-3 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
@@ -169,6 +214,25 @@ export default function ChatInterface() {
              </div>
           </div>
         )}
+        {syncMessage ? (
+          <div className="rounded-2xl border border-[#AAFF00]/20 bg-[#AAFF00]/5 px-5 py-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#AAFF00]" style={mono}>
+              <RefreshCw size={12} />
+              {syncMessage}
+            </div>
+            {syncHash ? (
+              <a
+                href={getTxExplorerUrl(syncHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-cyan-300 underline"
+                style={mono}
+              >
+                View Sync Tx <ExternalLink size={12} />
+              </a>
+            ) : null}
+          </div>
+        ) : null}
         <div ref={bottomRef} />
       </div>
 

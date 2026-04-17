@@ -56,6 +56,50 @@ async function buildOpenAIResponse(userMessage: string, data: unknown, structure
   }
 }
 
+function buildRuleBasedReply(message: string) {
+  const lower = message.toLowerCase();
+  const telemetry = getTelemetry();
+
+  if (lower.includes("help")) {
+    return [
+      "Available commands:",
+      '• "find opportunities" or "yield scan"',
+      '• "check portfolio" or "balance"',
+      '• "audit 0x..."',
+      '• "set risk 70"',
+      '• "status" or "telemetry"',
+      '• "history"',
+      '• "reset chat"',
+    ].join("\n");
+  }
+
+  if (lower.includes("history")) {
+    const lastMessages = conversationHistory.slice(-6);
+    if (lastMessages.length === 0) return "No chat history recorded yet.";
+    return lastMessages
+      .map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`)
+      .join("\n\n");
+  }
+
+  if (lower.includes("telemetry")) {
+    const recent = telemetry.slice(-5);
+    if (recent.length === 0) return "No telemetry events recorded yet.";
+    return recent
+      .map((event) => `• ${event.event} @ ${new Date(event.timestamp).toLocaleTimeString("en-US", { hour12: false })}`)
+      .join("\n");
+  }
+
+  return "";
+}
+
+export async function GET() {
+  return NextResponse.json({
+    history: conversationHistory.slice(-20),
+    riskThreshold: agentConfig.riskThreshold,
+    telemetryCount: getTelemetry().length,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message } = await req.json();
@@ -69,8 +113,23 @@ export async function POST(req: NextRequest) {
     let reply = "";
     let data: unknown = undefined;
 
+    if (lower.includes("reset chat")) {
+      conversationHistory.length = 0;
+      reply = "Chat history cleared. AGORA session reset.";
+      data = { cleared: true };
+    }
+
+    else if (buildRuleBasedReply(message)) {
+      reply = buildRuleBasedReply(message);
+      data = {
+        riskThreshold: agentConfig.riskThreshold,
+        telemetryCount: getTelemetry().length,
+        historyCount: conversationHistory.length,
+      };
+    }
+
     // Intent: find opportunities / yield / scan
-    if (lower.includes("find opportunities") || lower.includes("yield") || lower.includes("scan")) {
+    else if (lower.includes("find opportunities") || lower.includes("yield") || lower.includes("scan")) {
       const rpcUrl = process.env.RPC_URL || "https://testrpc.xlayer.tech";
       const opportunities = await findYield(rpcUrl);
       data = opportunities;
@@ -126,7 +185,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Intent: status / help
-    else if (lower.includes("status") || lower.includes("help")) {
+    else if (lower.includes("status")) {
       const telemetry = getTelemetry();
       data = {
         riskThreshold: agentConfig.riskThreshold,

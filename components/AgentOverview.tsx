@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 import AgentCard from "./AgentCard";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { agentRegistryAbi, addresses } from "../lib/contracts";
+import { wagmiConfig } from "../lib/wagmiConfig";
 
 export default function AgentOverview() {
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
   const [mounted, setMounted] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -43,26 +48,35 @@ export default function AgentOverview() {
     },
   });
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
 
-  const { isLoading: isWaiting, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
+  async function submitAgentAction(functionName: "registerAgent" | "incrementTxCount" | "recordEarnings", args: unknown[]) {
+    setIsProcessing(true);
 
-  useEffect(() => {
-    if (isSuccess) {
-      refetchAgentId();
-      refetchAgentData();
+    try {
+      const hash = await writeContractAsync({
+        address: addresses.agentRegistry,
+        abi: agentRegistryAbi,
+        functionName,
+        args: args as never,
+      });
+
+      setTxHash(hash);
+
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+      } else {
+        await waitForTransactionReceipt(wagmiConfig, { hash });
+      }
+
+      await Promise.all([refetchAgentId(), refetchAgentData()]);
+    } finally {
+      setIsProcessing(false);
     }
-  }, [isSuccess, refetchAgentId, refetchAgentData]);
+  }
 
   const handleRegister = () => {
-    writeContract({
-      address: addresses.agentRegistry,
-      abi: agentRegistryAbi,
-      functionName: "registerAgent",
-      args: ["Agora Prime Agent"],
-    });
+    void submitAgentAction("registerAgent", ["Agora Prime Agent"]);
   };
 
   // During SSR or initial mount, show a placeholder with no user-specific data
@@ -73,7 +87,8 @@ export default function AgentOverview() {
         address={mounted && address ? address : "0x70586BeEB7b7Aa2e7966DF9c8493C6CbFd75C625"}
         status={mounted && isConnected ? "Ready to Deploy" : "Connect Wallet"}
         tags={["Yield Finder", "Risk Aware", "x402 Enabled", "X Layer Native"]}
-        isRegistering={isPending || isWaiting}
+        txHash={txHash}
+        isRegistering={isProcessing}
         onRegister={handleRegister}
       />
     );
@@ -82,21 +97,11 @@ export default function AgentOverview() {
   const [owner, name] = agentData as [string, string, bigint, bigint];
 
   const handleIncrementTx = () => {
-    writeContract({
-      address: addresses.agentRegistry,
-      abi: agentRegistryAbi,
-      functionName: "incrementTxCount",
-      args: [agentId],
-    });
+    void submitAgentAction("incrementTxCount", [agentId]);
   };
 
   const handleRecordEarnings = () => {
-    writeContract({
-      address: addresses.agentRegistry,
-      abi: agentRegistryAbi,
-      functionName: "recordEarnings",
-      args: [agentId, 1000000n], // 1 tUSDC for mockup
-    });
+    void submitAgentAction("recordEarnings", [agentId, 1000000n]);
   };
 
   return (
@@ -106,11 +111,11 @@ export default function AgentOverview() {
       status="Autonomous"
       tags={["Registered On-Chain", "x402 Enabled", "Prime Agent"]}
       agentId={Number(agentId)}
+      txHash={txHash}
       onIncrementTx={handleIncrementTx}
       onRecordEarnings={handleRecordEarnings}
-      isProcessing={isPending || isWaiting}
+      isProcessing={isProcessing}
     />
   );
 }
-
 

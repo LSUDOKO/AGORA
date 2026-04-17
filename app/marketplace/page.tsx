@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useAccount, useReadContract, useWriteContract, useBalance } from "wagmi";
-import { formatUnits, parseUnits } from "viem";
+import { useAccount, useReadContract, useWriteContract, useBalance, usePublicClient } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { formatUnits } from "viem";
 import { addresses, skillsRegistryAbi, paymentRouterAbi, usdcAbi } from "../../lib/contracts";
+import { wagmiConfig } from "../../lib/wagmiConfig";
 import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import RegisterSkillForm from "../../components/RegisterSkillForm";
 import { 
@@ -49,6 +51,7 @@ const ACTIVE_CHAIN = {
 
 export default function MarketplacePage() {
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
   const gridRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -56,19 +59,15 @@ export default function MarketplacePage() {
   const [showForm, setShowForm] = useState(false);
   const [showRegisterSkill, setShowRegisterSkill] = useState(false);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skillsLoading, setSkillsLoading] = useState(true);
+  const [skillsError, setSkillsError] = useState("");
   const [txState, setTxState] = useState<Record<string, "idle" | "approving" | "broadcasting" | "done" | "error">>({});
   const [txHash, setTxHash] = useState<Record<string, string>>({});
   const [error, setError] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ name: "", description: "", riskThreshold: 50, preferredProtocols: "" });
 
   const { writeContractAsync } = useWriteContract();
-
-  // Contract Reads
-  const { data: skillsData, isLoading: loading, refetch: refetchSkills } = useReadContract({
-    address: addresses.skillsRegistry,
-    abi: skillsRegistryAbi,
-    functionName: "getAllSkills",
-  });
 
   const { data: agentId } = useReadContract({
     address: addresses.agentRegistry,
@@ -88,23 +87,85 @@ export default function MarketplacePage() {
 
   const { data: usdcBalanceData } = useBalance({
     address: address,
-    token: addresses.usdc,
+    token: addresses.testUsdc || addresses.usdc,
+    query: { refetchInterval: 5000 },
   });
 
   const usdcBalance = usdcBalanceData?.value || 0n;
 
-  // Process Skills
-  const skills = useMemo(() => {
-    if (!skillsData || !Array.isArray(skillsData)) return [];
-    return (skillsData as any[]).map((s: any, index: number) => ({
-      skillId: BigInt(index + 1),
-      provider: s.provider,
-      name: s.name,
-      description: s.description,
-      priceUSDC: s.priceUSDC,
-      totalHires: s.totalHires,
-    })) as Skill[];
-  }, [skillsData]);
+  const loadSkills = useCallback(async () => {
+    if (!publicClient) return;
+
+    setSkillsLoading(true);
+    setSkillsError("");
+
+    try {
+      const count = (await publicClient.readContract({
+        address: addresses.skillsRegistry,
+        abi: skillsRegistryAbi,
+        functionName: "skillCount",
+      })) as bigint;
+
+      if (count === 0n) {
+        setSkills([]);
+        return;
+      }
+
+      const skillIndexes = Array.from({ length: Number(count) }, (_, index) => BigInt(index + 1));
+      const loadedSkills = await Promise.all(
+        skillIndexes.map(async (skillId) => {
+          const [provider, name, priceUSDC, totalHires] = (await publicClient.readContract({
+            address: addresses.skillsRegistry,
+            abi: skillsRegistryAbi,
+            functionName: "getSkill",
+            args: [skillId],
+          })) as [string, string, bigint, bigint];
+
+          const description = (await publicClient.readContract({
+            address: addresses.skillsRegistry,
+            abi: skillsRegistryAbi,
+            functionName: "getSkillDescription",
+            args: [skillId],
+          })) as string;
+
+          return {
+            skillId,
+            provider,
+            name,
+            description,
+            priceUSDC,
+            totalHires,
+          } satisfies Skill;
+        }),
+      );
+
+      setSkills(
+        loadedSkills.filter(
+          (skill) => skill.provider !== "0x0000000000000000000000000000000000000000",
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to load skills", err);
+      setSkills([]);
+      setSkillsError("REGISTRY_SYNC_FAILED");
+    } finally {
+      setSkillsLoading(false);
+    }
+  }, [publicClient]);
+
+  useEffect(() => {
+    loadSkills();
+  }, [loadSkills]);
+
+  useEffect(() => {
+    if (!publicClient) return;
+
+    const interval = window.setInterval(() => {
+      loadSkills();
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [loadSkills, publicClient]);
 
   // Actions
   const hireSkill = async (skill: Skill) => {
@@ -119,12 +180,18 @@ export default function MarketplacePage() {
       
       // Check allowance
       setTxState(prev => ({ ...prev, [id]: "approving" }));
-      await writeContractAsync({
+      const approveHash = await writeContractAsync({
         address: addresses.usdc,
         abi: usdcAbi,
         functionName: "approve",
         args: [addresses.paymentRouter, skill.priceUSDC],
       });
+
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+      } else {
+        await waitForTransactionReceipt(wagmiConfig, { hash: approveHash });
+      }
 
       // Hire
       setTxState(prev => ({ ...prev, [id]: "broadcasting" }));
@@ -136,9 +203,16 @@ export default function MarketplacePage() {
       });
 
       setTxHash(prev => ({ ...prev, [id]: hash }));
+      
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+      } else {
+        await waitForTransactionReceipt(wagmiConfig, { hash });
+      }
+
       setTxState(prev => ({ ...prev, [id]: "done" }));
-      refetchSkills();
-    } catch (err: any) {
+      loadSkills();
+    } catch (err: unknown) {
       console.error(err);
       setTxState(prev => ({ ...prev, [skill.skillId.toString()]: "error" }));
     }
@@ -174,6 +248,35 @@ export default function MarketplacePage() {
     localStorage.setItem("agora_strategies", JSON.stringify(updated));
     setStrategies(updated);
   };
+
+  const deleteStrategy = (strategyId: string) => {
+    const updated = strategies.filter((strategy) => strategy.id !== strategyId);
+    localStorage.setItem("agora_strategies", JSON.stringify(updated));
+    setStrategies(updated);
+  };
+
+  const exportStrategy = (strategy: Strategy) => {
+    const blob = new Blob([JSON.stringify(strategy, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${strategy.name.toLowerCase()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const normalizeStrategy = (raw: Partial<Strategy>): Strategy => ({
+    id: raw.id || crypto.randomUUID(),
+    name: (raw.name || "CUSTOM_STRATEGY").toUpperCase(),
+    description: raw.description || "Imported strategy module.",
+    author: raw.author || (address ? `AGENT_${address.slice(0, 6)}` : "IMPORTED"),
+    usageCount: Number(raw.usageCount || 0),
+    rating: Number(raw.rating || 5),
+    riskThreshold: Number(raw.riskThreshold ?? 50),
+    preferredProtocols: Array.isArray(raw.preferredProtocols)
+      ? raw.preferredProtocols.map((protocol) => String(protocol).toUpperCase())
+      : [],
+  });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,11 +417,25 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          {loading ? (
+          {skillsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[1, 2, 3].map(i => (
                 <div key={i} className="h-80 rounded-[3rem] border border-white/10 bg-white/5 animate-pulse" />
               ))}
+            </div>
+          ) : skillsError ? (
+            <div className="rounded-[3rem] border border-rose-500/20 bg-rose-500/5 p-24 text-center space-y-6">
+              <div className="w-16 h-16 rounded-3xl bg-rose-500/10 flex items-center justify-center mx-auto">
+                 <Info className="w-8 h-8 text-rose-400" />
+              </div>
+              <p className="text-rose-300 text-sm uppercase tracking-widest font-bold" style={mono}>{skillsError}</p>
+              <button
+                onClick={() => loadSkills()}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-white text-black text-xs font-black uppercase tracking-widest"
+                style={bebas}
+              >
+                RETRY_SYNC
+              </button>
             </div>
           ) : skills.length === 0 ? (
             <div className="rounded-[3rem] border border-white/5 bg-white/[0.02] p-24 text-center space-y-6">
@@ -422,9 +539,10 @@ export default function MarketplacePage() {
                   const reader = new FileReader();
                   reader.onload = ev => {
                     try {
-                      const parsed = JSON.parse(ev.target?.result as string) as Strategy;
-                      if (!parsed.id || !parsed.name) throw new Error("Invalid");
-                      saveStrategy(parsed);
+                      const parsed = JSON.parse(ev.target?.result as string);
+                      const strategyList = Array.isArray(parsed) ? parsed : [parsed];
+                      const validStrategies = strategyList.map(normalizeStrategy);
+                      validStrategies.reverse().forEach(saveStrategy);
                     } catch { alert("Invalid strategy JSON."); }
                   };
                   reader.readAsText(file); e.target.value = "";
@@ -515,10 +633,18 @@ export default function MarketplacePage() {
                      <span className="text-[8px] text-slate-600 font-black tracking-widest uppercase" style={mono}>Protocol_Saturation</span>
                   </div>
                   <div className="flex gap-6">
-                    <button className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 transition-all">
+                    <button
+                      onClick={() => exportStrategy(s)}
+                      className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                      aria-label={`Export ${s.name}`}
+                    >
                       <Download className="w-5 h-5" />
                     </button>
-                    <button className="p-2 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
+                    <button
+                      onClick={() => deleteStrategy(s.id)}
+                      className="p-2 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                      aria-label={`Delete ${s.name}`}
+                    >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
@@ -534,7 +660,10 @@ export default function MarketplacePage() {
 
       {/* Register Skill Modal */}
       {showRegisterSkill && (
-        <RegisterSkillForm onClose={() => { setShowRegisterSkill(false); refetchSkills(); }} />
+        <RegisterSkillForm 
+          onClose={() => setShowRegisterSkill(false)} 
+          onSuccess={() => { loadSkills(); }} 
+        />
       )}
     </div>
   );

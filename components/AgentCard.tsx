@@ -9,6 +9,7 @@ interface AgentCardProps {
   status: string;
   tags: string[];
   agentId?: number;
+  txHash?: string | null;
   isRegistering?: boolean;
   onRegister?: () => void;
   onIncrementTx?: () => void;
@@ -25,6 +26,7 @@ export default function AgentCard({
   status,
   tags,
   agentId,
+  txHash,
   isRegistering,
   onRegister,
   onIncrementTx,
@@ -123,6 +125,18 @@ export default function AgentCard({
             </button>
           </div>
         )}
+
+        {txHash ? (
+          <a
+            href={`https://www.okx.com/web3/explorer/xlayer-test/tx/${txHash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#AAFF00] underline"
+            style={mono}
+          >
+            View Tx on Explorer
+          </a>
+        ) : null}
       </div>
     </section>
   );

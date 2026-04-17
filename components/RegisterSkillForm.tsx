@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { parseUnits } from "viem";
 import { addresses, skillsRegistryAbi } from "../lib/contracts";
+import { wagmiConfig } from "../lib/wagmiConfig";
+import { getTxExplorerUrl } from "../lib/explorer";
 import { Rocket, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 
 interface RegisterSkillFormProps {
@@ -16,12 +19,14 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillFormProps) {
   const { address } = useAccount();
+  const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [txHash, setTxHash] = useState<string | null>(null);
   
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,22 +38,35 @@ export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillF
     try {
       const priceUSDC = parseUnits(price, 6);
       
-      await writeContractAsync({
+      const hash = await writeContractAsync({
         address: addresses.skillsRegistry,
         abi: skillsRegistryAbi,
         functionName: "registerSkill",
         args: [name, description, priceUSDC],
       });
+      setTxHash(hash);
+
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+      } else {
+        await waitForTransactionReceipt(wagmiConfig, { hash });
+      }
 
       setStatus("done");
+      onSuccess?.();
       setTimeout(() => {
-        if (onSuccess) onSuccess();
         onClose();
-      }, 2000);
-    } catch (err: any) {
+      }, 1500);
+    } catch (err: unknown) {
       console.error(err);
       setStatus("error");
-      setErrorMessage(err.shortMessage || err.message || "Registration failed");
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "shortMessage" in err
+            ? String(err.shortMessage)
+            : "Registration failed";
+      setErrorMessage(message);
     }
   }
 
@@ -162,6 +180,17 @@ export default function RegisterSkillForm({ onClose, onSuccess }: RegisterSkillF
               <div className="md:col-span-2 flex items-center gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-bold" style={mono}>
                 <AlertCircle size={16} />
                 <span>{errorMessage}</span>
+              </div>
+            )}
+            {txHash && (
+              <div className="md:col-span-2 text-center mt-2">
+                <a 
+                  href={getTxExplorerUrl(txHash)}
+                  target="_blank" rel="noreferrer"
+                  className="text-[10px] text-[#AAFF00] underline font-bold uppercase tracking-widest" style={mono}
+                >
+                  View Transaction on X Layer Explorer ↗
+                </a>
               </div>
             )}
           </form>

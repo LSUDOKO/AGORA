@@ -1,41 +1,36 @@
+# Netlify configuration for Next.js
 [build]
   command = "npm run build"
   publish = ".next"
 
+# Essential Next.js Plugin
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NEXT_USE_NETLIFY_EDGE = "false"
 
-# Redirect all requests to Next.js
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
+# Functions configuration
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["node_modules/**", ".next/**"]
 
-# API routes
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
-
-# Static files
+# Headers for security and caching
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/fonts/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-[[headers]]
-  for = "/_next/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"

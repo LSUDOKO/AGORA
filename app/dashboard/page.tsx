@@ -6,7 +6,6 @@ import AgentOverview from "../../components/AgentOverview";
 import DashboardStats from "../../components/DashboardStats";
 import AgentTelemetryPanel from "../../components/AgentTelemetryPanel";
 import LiveActivityFeed from "../../components/LiveActivityFeed";
-import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import { Cpu, Terminal, Activity, Zap } from "lucide-react";
 
 const bebas = { fontFamily: "'Bebas Neue', cursive" };
@@ -39,8 +38,6 @@ export default function DashboardPage() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen bg-black pt-32 pb-20 px-6 overflow-hidden">
-      {/* Background Shader */}
-      <GradientBackground />
       
       <div className="relative z-10 max-w-7xl mx-auto space-y-12">
         {/* Header */}

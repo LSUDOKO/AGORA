@@ -10,7 +10,6 @@ import { addresses, skillsRegistryAbi, paymentRouterAbi, usdcAbi } from "../../l
 import { wagmiConfig } from "../../lib/wagmiConfig";
 import { getTxExplorerUrl } from "../../lib/explorer";
 import { ACTIVE_CHAIN } from "../../lib/chain";
-import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import RegisterSkillForm from "../../components/RegisterSkillForm";
 import { 
   ShieldCheck, Zap, Download, Trash2, Plus, Info, 
@@ -309,8 +308,6 @@ export default function MarketplacePage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-hidden">
-      <GradientBackground />
-
       <div className="relative z-10 pt-32 pb-24 px-6 max-w-7xl mx-auto space-y-16">
         {/* Header Section */}
         <header className="flex flex-col lg:flex-row justify-between items-end gap-12">

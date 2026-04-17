@@ -1,7 +1,6 @@
 "use client";
 
 import ChatInterface from "../../components/ChatInterface";
-import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import { MessageSquare, Shield, Cpu } from "lucide-react";
 
 const bebas = { fontFamily: "'Bebas Neue', cursive" };
@@ -10,8 +9,6 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" };
 export default function ChatPage() {
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-hidden flex flex-col">
-      <GradientBackground />
-
       {/* Persistent Decorative Navbar Offset */}
       <div className="h-24 w-full" />
 

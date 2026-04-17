@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SplitType from "split-type";
-import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import {
   Activity as ActivityIcon,
   ArrowUpRight,
@@ -315,8 +314,6 @@ export default function ActivityPage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
-      <GradientBackground />
-
       <div className="relative z-10 pt-32 pb-32">
         <section ref={heroRef} className="px-6 max-w-7xl mx-auto mb-16 space-y-4">
           <div className="flex items-center gap-4">

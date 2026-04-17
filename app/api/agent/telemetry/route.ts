@@ -3,7 +3,7 @@ import { getTelemetry, pushTelemetry } from "../../../../agent/multiAgent";
 import deploymentData from "../../../../deployments/addresses.json";
 import { createPublicClient, http, formatUnits } from "viem";
 import { ACTIVE_CHAIN } from "../../../../lib/chain";
-import { paymentRouterAbi, addresses } from "../../../../lib/contracts";
+import { paymentRouterAbi, agentRegistryAbi, addresses } from "../../../../lib/contracts";
 
 const publicClient = createPublicClient({
   chain: ACTIVE_CHAIN,

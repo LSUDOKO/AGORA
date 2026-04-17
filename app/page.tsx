@@ -129,9 +129,11 @@ export default function HomePage() {
               <div className="h-2 w-2 rounded-full bg-[#AAFF00] animate-pulse" />
             </div>
 
-            <h1 className="hero-title text-[clamp(4rem,12vw,11rem)] leading-[0.8] tracking-tighter uppercase font-black" style={bebas}>
-              The <span className="text-[#AAFF00]">Sovereign</span><br />
-              Agent Core
+            <h1 className="hero-title text-[clamp(4rem,12vw,11rem)] leading-[0.85] tracking-tighter uppercase font-black" style={bebas}>
+              <span className="text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">The</span>{" "}
+              <span className="text-[#AAFF00] drop-shadow-[0_0_40px_rgba(170,255,0,0.5)]">Sovereign</span>
+              <br />
+              <span className="text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">Agent Core</span>
             </h1>
 
             <div className="flex flex-col md:flex-row gap-12 items-start md:items-end justify-between pt-8">

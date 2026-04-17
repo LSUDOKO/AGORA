@@ -7,7 +7,6 @@ import { useReadContract, usePublicClient, useBlockNumber } from "wagmi";
 import { ACTIVE_CHAIN } from "../../lib/chain";
 import { leaderboardAbi, agentRegistryAbi, addresses, skillsRegistryAbi, paymentRouterAbi } from "../../lib/contracts";
 import { gsap } from "gsap";
-import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import { Trophy, TrendingUp, ShieldCheck, Zap, ArrowUpRight, Globe, Activity, Users, Layers, ExternalLink, Clock, Loader2 } from "lucide-react";
 import { formatUnits } from "viem";
 
@@ -51,9 +50,10 @@ export default function LeaderboardPage() {
   });
 
   useEffect(() => {
-    if (!topAgents || !Array.isArray(topAgents)) return;
+    if (!topAgents || !Array.isArray(topAgents) || !publicClient) return;
 
     async function fetchDetails() {
+      if (!publicClient) return;
       const details: Record<string, { address: string; name: string; earnings: string }> = {};
       for (const entry of topAgents as any[]) {
         try {
@@ -173,8 +173,6 @@ export default function LeaderboardPage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
-      <GradientBackground />
-
       <div className="relative z-10 pt-32 pb-32 px-6 max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-20 space-y-8">

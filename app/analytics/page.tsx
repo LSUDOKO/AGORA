@@ -5,7 +5,6 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, LineChart, Line
 } from "recharts";
-import { GradientBackground } from "../../components/ui/paper-design-shader-background";
 import { BarChart3, TrendingUp, Zap, Activity, Download, Info } from "lucide-react";
 import { formatUnits, createPublicClient, http } from "viem";
 import { ACTIVE_CHAIN } from "../../lib/chain";
@@ -175,8 +174,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
-      <GradientBackground />
-
       <div className="relative z-10 pt-32 pb-32 px-6 max-w-7xl mx-auto space-y-16">
         {/* Header */}
         <header className="space-y-6">

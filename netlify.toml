@@ -1,7 +1,7 @@
 # Netlify configuration for Next.js
 [build]
   command = "npm run build"
-  # Don't set publish directory - let the Next.js plugin handle it
+  publish = ".next"
 
 # Essential Next.js Plugin
 [[plugins]]

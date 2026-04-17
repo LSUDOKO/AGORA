@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { formatUnits } from "viem";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { agentRegistryAbi, addresses, paymentRouterAbi, usdcAbi } from "../lib/contracts";
@@ -7,6 +8,11 @@ import StatCard from "./StatCard";
 
 export default function DashboardStats() {
   const { address } = useAccount();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: agentId } = useReadContract({
     address: addresses.agentRegistry,
@@ -15,6 +21,7 @@ export default function DashboardStats() {
     args: address ? [address] : undefined,
     query: {
       enabled:
+        mounted &&
         Boolean(address) &&
         Boolean(addresses.agentRegistry) &&
         addresses.agentRegistry.startsWith("0x") &&
@@ -24,7 +31,7 @@ export default function DashboardStats() {
 
   const { data } = useReadContracts({
     contracts:
-      agentId && agentId > 0n
+      mounted && agentId && agentId > 0n
         ? [
             {
               address: addresses.agentRegistry,
@@ -45,7 +52,7 @@ export default function DashboardStats() {
             },
           ]
         : [],
-    query: { enabled: Boolean(agentId && agentId > 0n) },
+    query: { enabled: mounted && Boolean(agentId && agentId > 0n) },
   });
 
   const agentTuple = data?.[0]?.result as [string, string, bigint, bigint] | undefined;
@@ -61,6 +68,16 @@ export default function DashboardStats() {
     { label: "Payment Token", value: `${formatUnits(usdcBalance, 6)}`, helper: "Wallet USDC/tUSDC balance" },
   ];
 
+  if (!mounted) {
+    return (
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="h-32 animate-pulse rounded-3xl border border-white/10 bg-white/5" />
+        ))}
+      </section>
+    );
+  }
+
   return (
     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat) => (
@@ -69,3 +86,4 @@ export default function DashboardStats() {
     </section>
   );
 }
+

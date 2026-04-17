@@ -4,24 +4,75 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SplitType from "split-type";
+import { GradientBackground } from "../../components/ui/paper-design-shader-background";
+import { Activity as ActivityIcon, Zap, ShieldCheck, Database, ArrowUpRight, Cpu } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const bebas = { fontFamily: "'Bebas Neue', cursive" };
 const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
-const INITIAL_ROWS = [
-  { icon: "bolt", name: "Sentience-Prime_01", addr: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", amount: "+12.420 ETH", time: "JUST NOW" },
-  { icon: "shield", name: "Arbitrage_Void_v4", addr: "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD", amount: "3,412.00 USDC", time: "2 MINS AGO" },
-  { icon: "account_tree", name: "Liquidity_Siphon_X", addr: "0x1234567890abcdef1234567890abcdef12345678", amount: "+0.892 WBTC", time: "5 MINS AGO" },
-  { icon: "database", name: "Neural_Oracle_Main", addr: "0xDEADBEEFCAFEBABEDEADBEEFCAFEBABEDEADBEEF", amount: "50,000.00 AGORA", time: "12 MINS AGO" },
-  { icon: "swap_horiz", name: "Cross_Chain_Ghost", addr: "0xABCDEF0123456789ABCDEF0123456789ABCDEF01", amount: "1.500 SOL", time: "18 MINS AGO" },
-];
+interface TelemetryEvent {
+  timestamp: number;
+  event: string;
+  data: any;
+}
+
+interface ActivityRow {
+  icon: React.ReactNode;
+  name: string;
+  addr: string;
+  amount: string;
+  time: string;
+}
+
+function getEventIcon(eventType: string) {
+  if (eventType.includes("swap")) return <Zap className="w-5 h-5 text-[#AAFF00]" />;
+  if (eventType.includes("pool")) return <Database className="w-5 h-5 text-cyan-400" />;
+  if (eventType.includes("opportunity")) return <Cpu className="w-5 h-5 text-amber-400" />;
+  if (eventType.includes("audit")) return <ShieldCheck className="w-5 h-5 text-emerald-400" />;
+  return <ActivityIcon className="w-5 h-5 text-slate-400" />;
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return "JUST NOW";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} MIN${minutes > 1 ? "S" : ""} AGO`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} HOUR${hours > 1 ? "S" : ""} AGO`;
+}
 
 export default function ActivityPage() {
   const heroRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
-  const [rows, setRows] = useState(INITIAL_ROWS);
+  const [rows, setRows] = useState<ActivityRow[]>([]);
+
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const res = await fetch("/api/agent/telemetry");
+        const data = await res.json();
+
+        if (data.latest && data.latest.length > 0) {
+          const activityRows = data.latest.slice(-12).reverse().map((e: TelemetryEvent) => ({
+            icon: getEventIcon(e.event),
+            name: e.event.toUpperCase().replace(/:/g, "_"),
+            addr: e.data?.poolAddress || e.data?.address || "0x0000000000000000000000000000000000000000",
+            amount: e.data?.amount || "N/A",
+            time: formatRelativeTime(e.timestamp),
+          }));
+          setRows(activityRows);
+        }
+      } catch (error) {
+        console.error("Failed to fetch activity:", error);
+      }
+    };
+
+    fetchActivity();
+    const interval = setInterval(fetchActivity, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -31,150 +82,146 @@ export default function ActivityPage() {
         gsap.from(split.chars!, { y: 60, opacity: 0, stagger: 0.025, ease: "power4.out", duration: 0.7, delay: 0.2 });
       }
 
-      // Live dot pulse
-      gsap.to(".live-dot", { scale: 1.8, opacity: 0, repeat: -1, duration: 1.2, ease: "power2.out", yoyo: false });
+      // Sync dot pulse
+      gsap.to(".sync-dot", { scale: 1.5, opacity: 0.5, repeat: -1, duration: 1, ease: "power2.inOut", yoyo: true });
 
       // Table rows
-      gsap.from(".activity-row", { x: -30, opacity: 0, stagger: 0.08, ease: "power3.out", duration: 0.6, delay: 0.5 });
-
-      // Monolithic section
-      gsap.from(".mono-title", {
-        opacity: 0, y: 30, duration: 0.8, ease: "power3.out",
-        scrollTrigger: { trigger: ".mono-section", start: "top 75%" },
+      gsap.from(".activity-row", { 
+        y: 20, 
+        opacity: 0, 
+        stagger: 0.05, 
+        ease: "power3.out", 
+        duration: 0.8, 
+        delay: 0.4,
+        clearProps: "all"
       });
-      gsap.from(".mono-stat", {
-        y: 20, opacity: 0, stagger: 0.15, ease: "power3.out",
-        scrollTrigger: { trigger: ".mono-section", start: "top 75%" },
-      });
-
-      // Count up TPV
-      const tpvEl = document.querySelector(".tpv-val") as HTMLElement;
-      if (tpvEl) {
-        const obj = { val: 0 };
-        gsap.to(obj, {
-          val: 41.2, duration: 2, ease: "power2.out",
-          scrollTrigger: { trigger: ".mono-section", start: "top 80%" },
-          onUpdate: () => { tpvEl.textContent = "$" + obj.val.toFixed(1) + "M"; },
-        });
-      }
     });
 
-    // New row insertion every 12s
-    const interval = setInterval(() => {
-      const newRow = {
-        icon: ["bolt", "shield", "swap_horiz", "database"][Math.floor(Math.random() * 4)],
-        name: `Agent_${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-        addr: "0x" + Math.random().toString(16).slice(2, 42).padEnd(40, "0"),
-        amount: `+${(Math.random() * 10).toFixed(3)} ETH`,
-        time: "JUST NOW",
-      };
-      setRows((prev) => [newRow, ...prev.slice(0, 4)]);
-    }, 12000);
-
-    return () => {
-      ctx.revert();
-      clearInterval(interval);
-    };
-  }, []);
+    return () => ctx.revert();
+  }, [rows]); // Re-run animation when rows change slightly
 
   return (
-    <div className="pt-20 bg-black min-h-screen">
-      {/* Hero */}
-      <section ref={heroRef} className="px-6 pt-16 mb-16">
-        <div className="flex items-center gap-6">
-          <h1 className="activity-title text-[clamp(3rem,12vw,8rem)] leading-none tracking-[2px] uppercase text-white" style={bebas}>
-            AGENT ACTIVITY
-          </h1>
-          <div className="live-dot w-8 h-8 rounded-full bg-[#AAFF00] mt-4 neon-pulse" />
-        </div>
-        <p className="text-[#888888] max-w-2xl mt-4 border-l-2 border-[#AAFF00] pl-6 uppercase tracking-widest text-sm" style={mono}>
-          Real-time synchronization of decentralized intelligence protocols across the AGORA network.
-        </p>
-      </section>
+    <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
+      <GradientBackground />
 
-      {/* Ticker */}
-      <div className="relative w-full overflow-hidden h-20 bg-[#AAFF00] -rotate-[3deg] z-10 my-20 flex items-center border-y-4 border-black">
-        <div className="ticker-scroll flex whitespace-nowrap">
-          {[1, 2].map((k) => (
-            <span key={k} className="text-black text-4xl tracking-[4px] mx-8" style={bebas}>
-              NETWORK STATUS: OPTIMAL // TOTAL VALUE PROCESSED: 48,291,012 USD // ACTIVE AGENTS: 14,022 // BLOCK HEIGHT: 19,203,110 //&nbsp;
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Activity Table */}
-      <section className="px-6 relative z-20">
-        <div className="bg-[#0e0e0e] border border-[#1a1a1a]">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-4 px-8 py-6 border-b border-[#1a1a1a] bg-[#111] tracking-[2px] text-[#888888] text-xl" style={bebas}>
-            <div className="col-span-1">STATE</div>
-            <div className="col-span-4">AGENT IDENTIFIER</div>
-            <div className="col-span-3 text-right">CAPITAL FLUX</div>
-            <div className="col-span-4 text-right">TEMPORAL TAG</div>
+      <div className="relative z-10 pt-32 pb-32">
+        {/* Hero Section */}
+        <section ref={heroRef} className="px-6 max-w-7xl mx-auto mb-16 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="px-3 py-1 rounded-full border border-[#AAFF00]/30 bg-[#AAFF00]/5 text-[#AAFF00] text-[10px] tracking-[0.2em]" style={mono}>
+              LIVE_TELEMETRY_FEED
+            </div>
+            <div className="sync-dot w-2 h-2 rounded-full bg-[#AAFF00]" />
           </div>
-          <div ref={tableRef}>
-            {rows.map((row, i) => (
-              <div
-                key={i}
-                className="activity-row grid grid-cols-12 gap-4 px-8 py-8 items-center hover:bg-[#AAFF00]/5 transition-colors border-b border-[#1a1a1a] group"
-              >
-                <div className="col-span-1">
-                  <span className="material-symbols-outlined text-[#AAFF00]" style={{ fontVariationSettings: "'FILL' 1" }}>{row.icon}</span>
-                </div>
-                <div className="col-span-4 flex flex-col">
-                  <span className="text-xl font-bold uppercase tracking-tight text-white" style={bebas}>{row.name}</span>
-                  <span className="text-sm text-[#888888]" style={mono}>{row.addr.slice(0, 20)}...</span>
-                </div>
-                <div className="col-span-3 text-right">
-                  <span className="text-2xl font-bold text-[#AAFF00]" style={mono}>{row.amount}</span>
-                </div>
-                <div className="col-span-4 text-right text-[#888888]" style={mono}>
-                  {row.time} <span className="text-[#AAFF00]">→</span>
-                </div>
-              </div>
+          <h1 className="activity-title text-7xl md:text-9xl tracking-tighter leading-[0.8] uppercase" style={bebas}>
+            Protocol <span className="text-[#AAFF00]">Activity</span>
+          </h1>
+          <p className="text-slate-400 max-w-2xl text-lg border-l border-[#AAFF00]/30 pl-6" style={mono}>
+            REAL-TIME SYNCHRONIZATION OF DECENTRALIZED COGNITIVE PROTOCOLS ACROSS THE AGORA NETWORK.
+          </p>
+        </section>
+
+        {/* Ticker */}
+        <div className="relative w-full overflow-hidden h-24 bg-white/5 backdrop-blur-md border-y border-white/10 z-10 my-16 flex items-center">
+          <div className="flex whitespace-nowrap animate-marquee">
+            {[1, 2, 3].map((k) => (
+              <span key={k} className="text-[#AAFF00] text-3xl tracking-[4px] mx-12 uppercase flex items-center gap-6" style={bebas}>
+                NETWORK: OPTIMAL <span className="text-white/20">//</span> TPV: 12.5M USD <span className="text-white/20">//</span> AGENTS: 14k+ <span className="text-white/20">//</span> BLOCK: 19.2M <span className="text-white/20">//</span> 
+              </span>
             ))}
           </div>
         </div>
-      </section>
 
-      {/* Monolithic section */}
-      <section className="mono-section mt-32 px-6 flex flex-col md:flex-row justify-between items-end gap-12 pb-24">
-        <div className="w-full md:w-1/2 border-t-8 border-[#AAFF00] pt-12">
-          <h2 className="mono-title text-7xl tracking-tighter leading-none mb-6 text-white" style={bebas}>
-            MONOLITHIC<br />ORCHESTRATION
-          </h2>
-          <div className="grid grid-cols-2 gap-px bg-[#1a1a1a] border border-[#1a1a1a]">
-            <div className="mono-stat bg-black p-6">
-              <div className="text-[#888888] text-xs mb-2" style={mono}>TPV (24H)</div>
-              <div className="tpv-val text-4xl text-[#AAFF00]" style={bebas}>$0M</div>
+        {/* Activity Table */}
+        <section className="px-6 max-w-7xl mx-auto">
+          <div className="rounded-[40px] border border-white/10 bg-white/[0.03] backdrop-blur-xl overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-12 gap-4 px-10 py-8 border-b border-white/10 bg-white/5 items-center">
+              <div className="col-span-1 text-[10px] text-slate-500 tracking-[0.2em]" style={mono}>TAG</div>
+              <div className="col-span-4 text-[10px] text-slate-500 tracking-[0.2em]" style={mono}>IDENTIFIER / ADDRESS</div>
+              <div className="col-span-3 text-right text-[10px] text-slate-500 tracking-[0.2em]" style={mono}>CAPITAL_FLUX</div>
+              <div className="col-span-4 text-right text-[10px] text-slate-500 tracking-[0.2em]" style={mono}>TEMPORAL_TAG</div>
             </div>
-            <div className="mono-stat bg-black p-6">
-              <div className="text-[#888888] text-xs mb-2" style={mono}>GAS OPTIMIZATION</div>
-              <div className="text-4xl text-[#AAFF00]" style={bebas}>99.8%</div>
+
+            <div ref={tableRef} className="divide-y divide-white/5">
+              {rows.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-32 text-center space-y-6">
+                  <div className="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center animate-pulse">
+                    <ActivityIcon className="w-8 h-8 text-[#AAFF00]" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-3xl text-white uppercase" style={bebas}>Initializing Feed...</h3>
+                    <p className="text-slate-500 text-sm max-w-xs mx-auto" style={mono}>
+                      PENDING ON-CHAIN EVENTS FROM X LAYER TESTNET NODE.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                rows.map((row, i) => (
+                  <div
+                    key={i}
+                    className="activity-row grid grid-cols-12 gap-4 px-10 py-10 items-center hover:bg-white/[0.05] transition-all duration-300 group"
+                  >
+                    <div className="col-span-1 flex items-center">
+                      <div className="p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:border-[#AAFF00]/30 transition-colors">
+                        {row.icon}
+                      </div>
+                    </div>
+                    <div className="col-span-4 flex flex-col gap-1">
+                      <span className="text-2xl text-white uppercase tracking-tight" style={bebas}>{row.name}</span>
+                      <span className="text-[10px] text-slate-500 break-all font-mono opacity-60 group-hover:opacity-100 transition-opacity" style={mono}>{row.addr}</span>
+                    </div>
+                    <div className="col-span-3 text-right">
+                      <span className="text-2xl text-[#AAFF00] font-bold" style={bebas}>{row.amount}</span>
+                    </div>
+                    <div className="col-span-4 flex items-center justify-end gap-4">
+                      <span className="text-sm text-slate-400" style={mono}>{row.time}</span>
+                      <div className="w-8 h-8 rounded-full border border-white/10 bg-white/5 flex items-center justify-center group-hover:bg-[#AAFF00] group-hover:text-black transition-all">
+                        <ArrowUpRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        </div>
-        <div className="w-full md:w-1/3 aspect-video bg-[#1a1a1a] relative overflow-hidden group border border-[#1a1a1a]">
-          <img
-            className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfPg7j5GYi5q9ZFpswdgGE-EMB8_B9BxAZ066bhXqf-1ENEbwKOlMZ_e7dpkhiUNmOwJlpGplRtmPnzoTqjtFika2i8_lBaabDkqnE-3btZMIVCFJilL85MjiOegUkA_g9NMIDqiy9bunc_8U4FEtNHZLCAR8CNsGKB_B6ULKh5nDIXCAQy80oKesCMDX1R86UpphMoAO9R6eK3OeZ3nm741GM0tIaMPtwdyH-gURxtRq4BwZCW53skKqD3_BTjpRiqfmVNCUklKJP"
-            alt="system schematic"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60" />
-          <div className="absolute bottom-6 left-6 text-2xl tracking-widest text-white" style={bebas}>SYSTEM SCHEMATIC v0.4</div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="w-full py-12 px-6 flex flex-col gap-8 bg-[#0a0a0a] border-t border-[#1a1a1a]">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="tracking-[2px] text-lg text-[#888888]" style={bebas}>©2024 AGORA PROTOCOL. ALL RIGHTS RESERVED.</div>
-          <div className="flex flex-wrap justify-center gap-8 tracking-[2px] text-lg" style={bebas}>
-            <a className="text-[#888888] hover:text-white underline" href="#">DOCUMENTATION</a>
-            <a className="text-[#888888] hover:text-white underline" href="#">SECURITY</a>
-            <span className="text-[#AAFF00]">STATUS: OPERATIONAL</span>
+        {/* System Schema Decoration */}
+        <section className="mt-32 px-6 max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center opacity-50">
+          <div className="space-y-8">
+            <h2 className="text-5xl text-white uppercase leading-none" style={bebas}>
+              Neural <br/> Architecture
+            </h2>
+            <div className="grid grid-cols-2 gap-px bg-white/10 border border-white/10">
+              {[
+                { label: "LATENCY", val: "14ms" },
+                { label: "SYNC_FREQ", val: "2.4Hz" },
+                { label: "UPTIME", val: "99.9%" },
+                { label: "LOAD", val: "0.42" }
+              ].map(stat => (
+                <div key={stat.label} className="bg-black/40 p-6 backdrop-blur-md">
+                   <div className="text-[9px] text-slate-500 mb-1" style={mono}>{stat.label}</div>
+                   <div className="text-2xl text-[#AAFF00]" style={bebas}>{stat.val}</div>
+                </div>
+              ))}
+            </div>
           </div>
+          <div className="rounded-[40px] border border-white/10 bg-white/5 aspect-video flex items-center justify-center">
+             <div className="text-center space-y-2">
+                <div className="text-[10px] text-slate-500 tracking-[0.4em]" style={mono}>SCHEMA_V0.4</div>
+                <div className="text-xs text-white underline decoration-[#AAFF00]" style={mono}>DOWNLOAD_DIAGRAM.PDF</div>
+             </div>
+          </div>
+        </section>
+      </div>
+
+      <footer className="w-full py-16 px-10 flex flex-col md:flex-row justify-between items-center gap-8 bg-black/50 backdrop-blur-xl border-t border-white/10">
+        <div className="text-slate-500 text-lg tracking-widest" style={bebas}>©2024 AGORA PROTOCOL.</div>
+        <div className="flex gap-10 text-slate-400 text-sm" style={bebas}>
+          <a href="#" className="hover:text-white transition-colors">OS_INTEL</a>
+          <a href="#" className="hover:text-white transition-colors">SECURITY</a>
+          <span className="text-[#AAFF00]">OPERATIONAL</span>
         </div>
       </footer>
     </div>

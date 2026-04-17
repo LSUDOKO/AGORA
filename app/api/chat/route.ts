@@ -20,7 +20,7 @@ function addToHistory(role: "user" | "assistant", content: string) {
 }
 
 async function buildOpenAIResponse(userMessage: string, data: unknown, structuredReply: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return structuredReply;
 
   const messages = [
@@ -39,13 +39,13 @@ async function buildOpenAIResponse(userMessage: string, data: unknown, structure
   ];
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model: "gpt-3.5-turbo", messages, max_tokens: 300 }),
+      body: JSON.stringify({ model: "llama3-8b-8192", messages, max_tokens: 300 }),
     });
 
     if (!res.ok) return structuredReply;

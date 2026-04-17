@@ -22,6 +22,7 @@ export const agentRegistryAbi = parseAbi([
   "function incrementTxCount(uint256 agentId)",
   "function recordEarnings(uint256 agentId, uint256 amount)",
   "function ownerToAgentId(address owner) view returns (uint256)",
+  "function getAllAgents() view returns ((address owner, string name, uint256 totalTxns, uint256 totalEarned, bool exists)[])",
   "event AgentRegistered(uint256 indexed agentId, address indexed owner, string name)",
   "event AgentTxCountIncremented(uint256 indexed agentId, uint256 newTotalTxns)",
   "event AgentEarningsRecorded(uint256 indexed agentId, uint256 amount, uint256 newTotalEarned)",
@@ -32,6 +33,7 @@ export const skillsRegistryAbi = parseAbi([
   "function getSkill(uint256 skillId) view returns (address provider, string name, uint256 priceUSDC, uint256 totalHires)",
   "function getSkillDescription(uint256 skillId) view returns (string description)",
   "function skillCount() view returns (uint256)",
+  "function getAllSkills() view returns ((address provider, string name, string description, uint256 priceUSDC, uint256 totalHires, bool exists)[])",
   "event SkillRegistered(uint256 indexed skillId, address indexed provider, string name, uint256 priceUSDC)",
   "event SkillHireCountIncremented(uint256 indexed skillId, uint256 newTotalHires)",
 ]);

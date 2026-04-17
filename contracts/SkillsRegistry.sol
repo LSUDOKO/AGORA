@@ -81,4 +81,13 @@ contract SkillsRegistry {
         skill.totalHires += 1;
         emit SkillHireCountIncremented(skillId, skill.totalHires);
     }
+
+    /// @notice Returns all skills registered in the protocol.
+    /// @return allSkills Array of all Skill structs.
+    function getAllSkills() external view returns (Skill[] memory allSkills) {
+        allSkills = new Skill[](skillCount);
+        for (uint256 i = 1; i <= skillCount; i++) {
+            allSkills[i - 1] = skills[i];
+        }
+    }
 }

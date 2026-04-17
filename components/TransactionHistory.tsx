@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { History, Filter, Clock } from "lucide-react";
+
+const bebas = { fontFamily: "'Bebas Neue', cursive" };
+const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 interface TxEvent {
   event: string;
@@ -13,20 +17,6 @@ const STATUSES = ["all", "completed", "failed"] as const;
 
 type EventType = (typeof EVENT_TYPES)[number];
 type StatusType = (typeof STATUSES)[number];
-
-function deriveStatus(event: string): string {
-  if (event === "swap:completed") return "completed";
-  if (event === "opportunity:rejected") return "failed";
-  return "completed";
-}
-
-function matchesType(event: string, type: EventType): boolean {
-  if (type === "all") return true;
-  if (type === "swap") return event.startsWith("swap");
-  if (type === "audit") return event.startsWith("opportunity");
-  if (type === "hire") return event.startsWith("hire");
-  return true;
-}
 
 export default function TransactionHistory() {
   const [events, setEvents] = useState<TxEvent[]>([]);
@@ -51,74 +41,99 @@ export default function TransactionHistory() {
   }, [typeFilter, statusFilter]);
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">History</p>
-          <h2 className="mt-1 text-lg font-semibold text-white">Transactions</h2>
+    <div className="group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-3xl transition-all hover:bg-white/[0.05]">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="space-y-1">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#AAFF00] font-bold" style={mono}>Ledger_Overview</p>
+          <div className="flex items-center gap-3">
+             <History size={20} className="text-[#AAFF00]" />
+             <h2 className="text-3xl text-white uppercase tracking-tight" style={bebas}>Protocol_History</h2>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as EventType)}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 focus:outline-none"
-          >
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t} className="bg-slate-900">
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </option>
-            ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusType)}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 focus:outline-none"
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s} className="bg-slate-900">
-                {s.charAt(0).toUpperCase() + s.slice(1)}
-              </option>
-            ))}
-          </select>
+        
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 p-1 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as EventType)}
+              className="bg-transparent text-[10px] text-white font-bold uppercase tracking-widest px-4 py-2 focus:outline-none cursor-pointer hover:text-[#AAFF00] transition-colors appearance-none"
+              style={mono}
+            >
+              {EVENT_TYPES.map((t) => (
+                <option key={t} value={t} className="bg-black text-white">
+                  TYPE: {t}
+                </option>
+              ))}
+            </select>
+            <div className="w-[1px] h-4 bg-white/10" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusType)}
+              className="bg-transparent text-[10px] text-white font-bold uppercase tracking-widest px-4 py-2 focus:outline-none cursor-pointer hover:text-[#AAFF00] transition-colors appearance-none"
+              style={mono}
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s} className="bg-black text-white">
+                  STATUS: {s}
+                </option>
+              ))}
+            </select>
+            <div className="pr-3 text-slate-600">
+               <Filter size={14} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="overflow-hidden">
         {events.length === 0 ? (
-          <p className="text-sm text-slate-500">No events yet</p>
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-3xl border border-dashed border-white/5 opacity-40">
+             <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mb-4">
+                <Clock size={20} />
+             </div>
+             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest" style={mono}>No_Ledger_Entries_Found</p>
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wider text-slate-500">
-                <th className="pb-2 pr-4">Time</th>
-                <th className="pb-2 pr-4">Event</th>
-                <th className="pb-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
+          <div className="space-y-2">
+            <div className="grid grid-cols-12 gap-4 px-6 py-3 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 border-b border-white/5" style={mono}>
+              <div className="col-span-3">Timestamp</div>
+              <div className="col-span-6">Operation_Identifer</div>
+              <div className="col-span-3 text-right">Status</div>
+            </div>
+            
+            <div className="max-h-[300px] overflow-y-auto custom-scrollbar pr-2 space-y-2 mt-2">
               {events.map((e, i) => (
-                <tr key={i}>
-                  <td className="py-2 pr-4 tabular-nums text-slate-400">
-                    {new Date(e.timestamp).toLocaleTimeString()}
-                  </td>
-                  <td className="py-2 pr-4 font-mono text-xs text-cyan-300">{e.event}</td>
-                  <td className="py-2">
+                <div key={i} className="grid grid-cols-12 gap-4 px-6 py-4 rounded-2xl bg-white/[0.02] border border-white/5 items-center transition-colors hover:bg-white/[0.04] group/item">
+                  <div className="col-span-3 text-[11px] tabular-nums text-slate-400 font-medium" style={mono}>
+                    {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </div>
+                  <div className="col-span-6 flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 opacity-20 group-hover/item:opacity-60 transition-opacity" />
+                     <code className="text-xs text-cyan-400 font-medium tracking-tight" style={mono}>{e.event}</code>
+                  </div>
+                  <div className="col-span-3 text-right">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[9px] font-bold uppercase tracking-widest ${
                         e.status === "completed"
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-red-500/20 text-red-400"
+                          ? "bg-[#AAFF00]/10 text-[#AAFF00] border border-[#AAFF00]/20"
+                          : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
                       }`}
+                      style={mono}
                     >
+                      <span className={`w-1 h-1 rounded-full ${e.status === "completed" ? "bg-[#AAFF00]" : "bg-rose-500"} animate-pulse`} />
                       {e.status}
                     </span>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         )}
       </div>
+      
+      {/* Decorative Gradient Overlay */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[80px] rounded-full opacity-5 pointer-events-none" />
     </div>
   );
 }

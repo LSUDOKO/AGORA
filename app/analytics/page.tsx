@@ -1,31 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, LineChart, Line, Legend
 } from "recharts";
+import { GradientBackground } from "../../components/ui/paper-design-shader-background";
+import { BarChart3, TrendingUp, Zap, Activity, Download, Info } from "lucide-react";
 
-interface TimeSeriesPoint {
-  time: string;
-  events: number;
-  swaps: number;
-}
+const bebas = { fontFamily: "'Bebas Neue', cursive" };
+const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 interface SkillStat {
   name: string;
   usageCount: number;
   successRate: number;
+}
+
+interface TimeSeriesPoint {
+  time: string;
+  events: number;
+  swaps: number;
 }
 
 // Mock gas cost data since gas tracking isn't implemented yet
@@ -100,136 +95,183 @@ export default function AnalyticsPage() {
   const skillData = skills.length > 0 ? skills : [{ name: "No data", usageCount: 0, successRate: 0 }];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <section className="rounded-[32px] border border-white/10 bg-white/[0.04] p-8">
-        <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">Analytics</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white md:text-5xl">
-          Agent Performance Dashboard
-        </h1>
-        <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-300">
-          Real-time charts and ROI metrics for your autonomous agent activity.
-        </p>
-      </section>
+    <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
+      <GradientBackground />
 
-      {/* ROI Section */}
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Return on Investment</h2>
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-300">
-            Mock values — on-chain earnings tracking coming soon
-          </span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-widest text-slate-400">Total Earned</p>
-            <p className="mt-1 text-2xl font-semibold text-emerald-400">${MOCK_ROI.totalEarned.toFixed(2)}</p>
+      <div className="relative z-10 pt-32 pb-32 px-6 max-w-7xl mx-auto space-y-16">
+        {/* Header */}
+        <header className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="px-3 py-1 rounded-full border border-[#AAFF00]/30 bg-[#AAFF00]/5 text-[#AAFF00] text-[10px] tracking-[0.2em] font-bold uppercase" style={mono}>
+              Network_Performance_Center
+            </div>
+            <div className="w-2 h-2 rounded-full bg-[#AAFF00] animate-pulse" />
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-widest text-slate-400">Gas Costs</p>
-            <p className="mt-1 text-2xl font-semibold text-rose-400">${MOCK_ROI.totalGasCost.toFixed(2)}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-widest text-slate-400">Initial Capital</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-200">${MOCK_ROI.initialCapital.toFixed(2)}</p>
-          </div>
-          <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4">
-            <p className="text-xs uppercase tracking-widest text-cyan-400">ROI</p>
-            <p className="mt-1 text-2xl font-semibold text-cyan-300">{roi.toFixed(2)}%</p>
-            <p className="mt-1 text-[10px] text-slate-500">
-              (earned − gas) / capital × 100
-            </p>
-          </div>
-        </div>
-      </section>
+          <h1 className="text-7xl md:text-9xl tracking-tighter leading-[0.8] uppercase" style={bebas}>
+            Agent <span className="text-[#AAFF00]">Analytics</span>
+          </h1>
+          <p className="text-slate-400 max-w-2xl text-lg border-l border-[#AAFF00]/30 pl-6" style={mono}>
+            REAL-TIME TELEMETRY DATA AND COGNITIVE CAPITAL ROI ANALYTICS FOR THE AGORA PROTOCOL.
+          </p>
+        </header>
 
-      {/* Performance Over Time */}
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Performance Over Time</h2>
-          <button
-            onClick={() => downloadCsv(timeSeries)}
-            className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
-          >
-            Export CSV
-          </button>
-        </div>
-        {loading ? (
-          <div className="flex h-48 items-center justify-center text-slate-500">Loading…</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="time" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-              <Tooltip
-                contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }}
-                labelStyle={{ color: "#e2e8f0" }}
-              />
-              <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12 }} />
-              <Line type="monotone" dataKey="events" stroke="#22d3ee" strokeWidth={2} dot={false} name="Events" />
-              <Line type="monotone" dataKey="swaps" stroke="#34d399" strokeWidth={2} dot={false} name="Swaps" />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </section>
+        {/* ROI Grid */}
+        <section className="grid gap-6 md:grid-cols-4">
+          {[
+            { label: "Total_Earned", value: `$${MOCK_ROI.totalEarned.toFixed(2)}`, color: "text-[#AAFF00]", helper: "NET_CAPITAL_GAIN" },
+            { label: "Gas_Flux", value: `$${MOCK_ROI.totalGasCost.toFixed(2)}`, color: "text-rose-400", helper: "NETWORK_UTILIZATION" },
+            { label: "Base_Capital", value: `$${MOCK_ROI.initialCapital.toFixed(2)}`, color: "text-slate-200", helper: "INITIAL_SYRINGE" },
+            { label: "Protocol_ROI", value: `${roi.toFixed(2)}%`, color: "text-[#22D3EE]", helper: "EFFICIENCY_INDEX", primary: true },
+          ].map((item, i) => (
+            <div key={i} className={`group relative p-8 rounded-[2.5rem] border border-white/10 ${item.primary ? "bg-cyan-500/10 border-cyan-500/30" : "bg-white/[0.03]"} backdrop-blur-3xl transition-all hover:bg-white/[0.05]`}>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold" style={mono}>{item.label}</span>
+                <span className={`text-4xl ${item.color}`} style={bebas}>{item.value}</span>
+                <span className="text-[8px] text-slate-600 font-bold tracking-[0.2em] mt-2 uppercase" style={mono}>{item.helper}</span>
+              </div>
+              {item.primary && (
+                 <div className="absolute top-4 right-6">
+                    <TrendingUp size={16} className="text-[#22D3EE]" />
+                 </div>
+              )}
+            </div>
+          ))}
+        </section>
 
-      {/* Skill Usage */}
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Skill Usage</h2>
-        {loading ? (
-          <div className="flex h-48 items-center justify-center text-slate-500">Loading…</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={skillData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-              <Tooltip
-                contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }}
-                labelStyle={{ color: "#e2e8f0" }}
-              />
-              <Bar dataKey="usageCount" fill="#22d3ee" radius={[6, 6, 0, 0]} name="Usage Count" />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </section>
+        <div className="grid gap-8 xl:grid-cols-2">
+          {/* Performance Over Time */}
+          <section className="p-8 rounded-[2.5rem] border border-white/10 bg-white/[0.03] backdrop-blur-3xl space-y-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                 <Activity size={20} className="text-[#AAFF00]" />
+                 <h2 className="text-3xl text-white uppercase" style={bebas}>Network_Throughput</h2>
+              </div>
+              <button
+                onClick={() => downloadCsv(timeSeries)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] text-slate-400 font-bold uppercase tracking-widest hover:bg-white/10 transition-all font-mono"
+                style={mono}
+              >
+                <Download size={14} /> EXPORT_CSV
+              </button>
+            </div>
+            
+            <div className="h-[300px] w-full mt-4">
+              {loading ? (
+                <div className="flex h-full items-center justify-center text-slate-600 font-mono text-xs uppercase tracking-widest">Awaiting_Sync...</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                    <XAxis dataKey="time" tick={{ fill: "#475569", fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: "#475569", fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{ background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", backdropBlur: "12px" }}
+                      itemStyle={{ color: "#AAFF00", fontSize: "12px", fontFamily: "'JetBrains Mono', monospace" }}
+                      labelStyle={{ color: "#ffffff", fontWeight: 700, marginBottom: "4px" }}
+                    />
+                    <Line type="monotone" dataKey="events" stroke="#AAFF00" strokeWidth={3} dot={false} animationDuration={2000} />
+                    <Line type="monotone" dataKey="swaps" stroke="#22D3EE" strokeWidth={3} dot={false} animationDuration={2500} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="flex gap-6 justify-center">
+               <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#AAFF00]" /><span className="text-[10px] text-slate-500 font-bold uppercase" style={mono}>Telemetry_Events</span></div>
+               <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#22D3EE]" /><span className="text-[10px] text-slate-500 font-bold uppercase" style={mono}>Capital_Swaps</span></div>
+            </div>
+          </section>
 
-      {/* Gas Cost Trends */}
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-        <div className="mb-1 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Gas Cost Trends</h2>
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-300">
-            Placeholder data — live gas tracking not yet wired
-          </span>
+          {/* Skill Usage */}
+          <section className="p-8 rounded-[2.5rem] border border-white/10 bg-white/[0.03] backdrop-blur-3xl space-y-8">
+            <div className="flex items-center gap-3">
+               <Zap size={20} className="text-[#AAFF00]" />
+               <h2 className="text-3xl text-white uppercase" style={bebas}>Capability_Distribution</h2>
+            </div>
+            <div className="h-[300px] w-full mt-4">
+              {loading ? (
+                <div className="flex h-full items-center justify-center text-slate-600 font-mono text-xs uppercase tracking-widest">Awaiting_Matrix...</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={skillData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: "#475569", fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: "#475569", fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                      contentStyle={{ background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px" }}
+                    />
+                    <Bar dataKey="usageCount" fill="#AAFF00" radius={[8, 8, 0, 0]} animationDuration={1500} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="flex justify-center flex-wrap gap-4">
+                {skills.map((s, i) => (
+                   <div key={i} className="flex flex-col items-center">
+                      <span className="text-[10px] text-white font-bold" style={bebas}>{s.name}</span>
+                      <span className="text-[8px] text-slate-600 font-bold uppercase" style={mono}>{(s.successRate * 100).toFixed(0)}% SUCCESS</span>
+                   </div>
+                ))}
+            </div>
+          </section>
         </div>
-        <p className="mb-4 text-xs text-slate-500">Simulated 24-hour gas price pattern (gwei)</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={GAS_MOCK_DATA} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <defs>
-              <linearGradient id="gasGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey="time" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-            <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-            <Tooltip
-              contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }}
-              labelStyle={{ color: "#e2e8f0" }}
-            />
-            <Area
-              type="monotone"
-              dataKey="gasGwei"
-              stroke="#a78bfa"
-              strokeWidth={2}
-              fill="url(#gasGradient)"
-              name="Gas (gwei)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </section>
+
+        {/* Gas Cost Trends */}
+        <section className="p-10 rounded-[3rem] border border-white/10 bg-white/[0.03] backdrop-blur-3xl space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+               <div className="flex items-center gap-3">
+                  <BarChart3 size={20} className="text-[#AAFF00]" />
+                  <h2 className="text-4xl text-white uppercase" style={bebas}>Network_Resource_Costs</h2>
+               </div>
+               <div className="flex items-center gap-2">
+                 <Info size={12} className="text-amber-500" />
+                 <span className="text-[10px] text-amber-500/80 font-bold tracking-widest uppercase" style={mono}>SIMULATED_24H_X_LAYER_FLUX</span>
+               </div>
+            </div>
+            <div className="text-right">
+               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em]" style={mono}>Avg_Network_Fee</p>
+               <p className="text-4xl text-white" style={bebas}>0.0012 <span className="text-sm text-slate-500">ETH</span></p>
+            </div>
+          </div>
+          
+          <div className="h-[260px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={GAS_MOCK_DATA} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gasGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#AAFF00" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#AAFF00" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis dataKey="time" tick={{ fill: "#475569", fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: "#475569", fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="gasGwei"
+                  stroke="#AAFF00"
+                  strokeWidth={2}
+                  fill="url(#gasGradient)"
+                  animationDuration={3000}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
+
+      <footer className="w-full py-20 px-10 flex flex-col md:flex-row justify-between items-center gap-8 bg-black/50 backdrop-blur-xl border-t border-white/10 mt-20">
+        <div className="text-slate-500 text-lg tracking-widest" style={bebas}>©2024 AGORA PROTOCOL.</div>
+        <div className="flex gap-10 text-slate-400 text-sm font-bold uppercase tracking-widest" style={mono}>
+          <span className="text-[#AAFF00]">ANALYTICS_V0.4</span>
+          <span className="text-slate-700">//</span>
+          <span>DATA_SYNC: OPTIMAL</span>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,13 +1,24 @@
-import deploymentData from "../../deployments/addresses.json";
 import { erc20Abi, parseAbi } from "viem";
 
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 1952);
+const isTestnet = chainId === 1952;
+
+function getEnvAddress(envKey: string, fallback: string): `0x${string}` {
+  const envAddr = process.env[envKey];
+  return (envAddr || fallback) as `0x${string}`;
+}
+
 export const addresses = {
-  agentRegistry: deploymentData.contracts.AgentRegistry as `0x${string}`,
-  skillsRegistry: deploymentData.contracts.SkillsRegistry as `0x${string}`,
-  paymentRouter: deploymentData.contracts.x402PaymentRouter as `0x${string}`,
-  leaderboard: deploymentData.contracts.LeaderboardTracker as `0x${string}`,
-  usdc: deploymentData.usdc as `0x${string}`,
-  testUsdc: (deploymentData.testTokens?.TestUSDC || "") as `0x${string}`,
+  agentRegistry: getEnvAddress("NEXT_PUBLIC_AGENT_REGISTRY", "0x9FCe359ab7A590d0491666B1f0873036f119Ef1d"),
+  skillsRegistry: getEnvAddress("NEXT_PUBLIC_SKILLS_REGISTRY", "0xc24759ec6A8E9006B47a5e7BdA6e13e589D8b841"),
+  paymentRouter: getEnvAddress("NEXT_PUBLIC_PAYMENT_ROUTER", "0x1d449F519D73e6A65cD65F0A29D4771b42f46CaE"),
+  leaderboard: getEnvAddress("NEXT_PUBLIC_LEADERBOARD", "0x1C1D38899909A1DAa23c58DB5A798823E31f2ed2"),
+  usdc: isTestnet
+    ? getEnvAddress("NEXT_PUBLIC_TEST_USDC", "0x70799d35aC43AD21e106270E14365a9B96BDc993")
+    : getEnvAddress("NEXT_PUBLIC_USDC", "0xdC00eC7B9e7F2d5E07aD2f73D4a3B89fD52F9F2F"),
+  testUsdc: isTestnet
+    ? getEnvAddress("NEXT_PUBLIC_TEST_USDC", "0x70799d35aC43AD21e106270E14365a9B96BDc993")
+    : "" as `0x${string}`,
 };
 
 export const agentRegistryAbi = parseAbi([

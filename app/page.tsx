@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SplitType from "split-type";
 import { GradientBackground } from "../components/ui/paper-design-shader-background";
-import { LoopCard } from "../components/ui/economy-loop-card";
-import {
-  ScanSearch,
-  UserPlus,
-  ShieldCheck,
-  Zap,
-  BookOpen,
-  TrendingUp,
-  ArrowRight,
+import { 
+  ScanSearch, UserPlus, ShieldCheck, Zap, BookOpen, 
+  TrendingUp, ArrowRight, Activity, Globe, Cpu 
 } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -22,313 +16,276 @@ gsap.registerPlugin(ScrollTrigger);
 const ECONOMY_STEPS = [
   {
     step: "01",
-    label: "SCAN",
-    sublabel: "Yield Discovery",
+    label: "DISCOVER",
+    sublabel: "Yield Engine",
     Icon: ScanSearch,
-    desc: "Prime Agent queries Onchain OS for live liquidity pools. Analyzes token holders, rug-pull risk, and 24h volatility.",
-    tech: ["Onchain OS", "token liquidity", "cluster-overview"],
+    desc: "Prime Agent scans X Layer liquidity pools via Onchain OS. Maps cluster risk and holder distribution.",
   },
   {
     step: "02",
-    label: "HIRE",
-    sublabel: "x402 Skill Payment",
+    label: "ACQUIRE",
+    sublabel: "x402 Protocol",
     Icon: UserPlus,
-    desc: "Agent pays Risk Auditor via x402PaymentRouter in tUSDC. Separate provider wallet prevents self-hire.",
-    tech: ["x402PaymentRouter", "SkillsRegistry", "tUSDC"],
+    desc: "Seamless machine-to-machine payments via x402PaymentRouter for instant skill acquisition.",
   },
   {
     step: "03",
-    label: "AUDIT",
-    sublabel: "Risk Scoring",
+    label: "VERIFY",
+    sublabel: "Risk Sentinel",
     Icon: ShieldCheck,
-    desc: "Pool scored 0–100: liquidity depth 30%, holders 25%, volatility 25%, cluster risk 20%. Pass ≥ 65.",
-    tech: ["4 risk factors", "Pass ≥ 65", "AuditResult"],
+    desc: "Real-time auditing of smart contract safety and liquidity depth using weighted risk scoring.",
   },
   {
     step: "04",
     label: "EXECUTE",
-    sublabel: "Uniswap V3 Swap",
+    sublabel: "V3 Orchestration",
     Icon: Zap,
-    desc: "Uniswap Trading API quote → token approval → swap broadcast on X Layer testnet (chain 1952).",
-    tech: ["Uniswap Trading API", "chain 1952", "UniswapDexRouter"],
+    desc: "Broadcasts multi-hop swaps across Uniswap V3 pools with sub-second finality on testnet.",
   },
   {
     step: "05",
     label: "RECORD",
-    sublabel: "On-Chain Bookkeeping",
+    sublabel: "Ledger Sync",
     Icon: BookOpen,
-    desc: "AgentRegistry.incrementTxCount() and recordEarnings() called. LeaderboardTracker updates rankings.",
-    tech: ["AgentRegistry", "recordEarnings()", "LeaderboardTracker"],
+    desc: "Every interaction is logged on-chain. Revenue shares and protocol fees settled automatically.",
   },
   {
     step: "06",
-    label: "EARN",
-    sublabel: "Yield Distribution",
+    label: "SCALE",
+    sublabel: "Neural Growth",
     Icon: TrendingUp,
-    desc: "Profits flow to agent owner. Portfolio snapshots track P&L. Rebalancer queues trades on drift.",
-    tech: ["PortfolioTracker", "P&L snapshots", "Rebalancer"],
+    desc: "Compounding earnings directly to agent owners. Automated rebalancing based on drift.",
   },
-];
-
-const STATS = [
-  { value: 1.2, suffix: "B+", label: "VOLUME_SETTLED", prefix: "$" },
-  { value: 842, suffix: "K", label: "AGENT_CALLS_24H", prefix: "" },
-  { value: 14, suffix: "MS", label: "AVG_LATENCY", prefix: "" },
-  { value: 0.02, suffix: "%", label: "PROTOCOL_FEE", prefix: "" },
 ];
 
 const bebas = { fontFamily: "'Bebas Neue', cursive" };
 const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 export default function HomePage() {
-  const statsRef = useRef<HTMLElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
   const loopRef = useRef<HTMLElement>(null);
-  const infraRef = useRef<HTMLElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const ctx = gsap.context(() => {
+      // Hero Title Animation
       const heroTitle = document.querySelector(".hero-title") as HTMLElement;
       if (heroTitle) {
         const split = new SplitType(heroTitle, { types: "chars" });
-        gsap.from(split.chars!, { y: 80, opacity: 0, stagger: 0.03, ease: "power4.out", duration: 0.8, delay: 0.2 });
-      }
-      gsap.from(".hero-status-line", { x: -30, opacity: 0, stagger: 0.15, delay: 1.2, duration: 0.6, ease: "power3.out" });
-      gsap.from(".hero-cta", { scale: 0.9, opacity: 0, delay: 1.8, duration: 0.5, ease: "back.out(1.7)" });
-
-      gsap.from(".economy-card", {
-        y: 60, opacity: 0, stagger: 0.1, ease: "power3.out",
-        scrollTrigger: { trigger: loopRef.current, start: "top 75%" },
-      });
-
-      STATS.forEach((stat, i) => {
-        const el = document.querySelector(`.stat-val-${i}`) as HTMLElement;
-        if (!el) return;
-        const obj = { val: 0 };
-        gsap.to(obj, {
-          val: stat.value, duration: 2, ease: "power2.out",
-          scrollTrigger: { trigger: statsRef.current, start: "top 80%" },
-          onUpdate: () => {
-            const v = obj.val;
-            el.textContent = stat.prefix + (stat.suffix === "K" ? Math.round(v) + "K" : stat.suffix === "B+" ? v.toFixed(1) + "B+" : stat.suffix === "MS" ? Math.round(v) + "MS" : v.toFixed(2) + "%");
-          },
+        gsap.from(split.chars!, { 
+          y: 100, 
+          opacity: 0, 
+          stagger: 0.02, 
+          ease: "power4.out", 
+          duration: 1, 
+          delay: 0.5 
         });
+      }
+
+      // Scroll Animations
+      gsap.from(".anim-item", {
+        y: 60,
+        opacity: 0,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".anim-trigger",
+          start: "top 80%",
+        }
       });
 
-      gsap.from(".infra-left", { x: -50, opacity: 0, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: infraRef.current, start: "top 70%" } });
-      gsap.from(".infra-right", { x: 50, opacity: 0, duration: 0.8, delay: 0.2, ease: "power3.out", scrollTrigger: { trigger: infraRef.current, start: "top 70%" } });
-      gsap.from(".infra-item", { x: -20, opacity: 0, stagger: 0.15, ease: "power3.out", scrollTrigger: { trigger: infraRef.current, start: "top 70%" } });
+      // Stats appearance
+      gsap.from(".stat-card", {
+        scale: 0.9,
+        opacity: 0,
+        stagger: 0.05,
+        duration: 0.8,
+        ease: "back.out(1.7)",
+        scrollTrigger: {
+          trigger: ".stats-trigger",
+          start: "top 85%",
+        }
+      });
     });
     return () => ctx.revert();
   }, []);
 
-  return (
-    <div className="pt-20">
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center bg-black overflow-hidden">
-        {/* Shader background — fills the section, sits behind everything */}
-        <div className="absolute inset-0" style={{ zIndex: 0 }}>
-          <GradientBackground />
-        </div>
-        {/* Dark overlay for text readability — light enough to let lime glow through */}
-        <div className="absolute inset-0 bg-black/55" style={{ zIndex: 1 }} />
+  if (!mounted) return <div className="min-h-screen bg-black" />;
 
-        <div className="container mx-auto px-6 relative py-24" style={{ zIndex: 2 }}>
-          <div className="max-w-5xl">
-            {/* Badge row */}
-            <div className="flex flex-wrap gap-3 mb-8">
-              <span className="border border-[#AAFF00]/40 text-[#AAFF00] text-xs px-3 py-1 tracking-[2px]" style={mono}>X LAYER</span>
-              <span className="border border-[#AAFF00]/40 text-[#AAFF00] text-xs px-3 py-1 tracking-[2px]" style={mono}>UNISWAP V3</span>
-              <span className="border border-white/20 text-[#888888] text-xs px-3 py-1 tracking-[2px]" style={mono}>ONCHAIN OS</span>
-              <span className="border border-white/20 text-[#888888] text-xs px-3 py-1 tracking-[2px]" style={mono}>x402 PAYMENTS</span>
-              <span className="border border-white/20 text-[#888888] text-xs px-3 py-1 tracking-[2px]" style={mono}>CHAIN 1952</span>
+  return (
+    <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
+      <GradientBackground />
+
+      <div className="relative z-10">
+        {/* Hero Section */}
+        <section ref={heroRef} className="min-h-screen flex flex-col justify-center px-6 pt-32 pb-24 max-w-7xl mx-auto">
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="px-3 py-1 rounded-full border border-[#AAFF00]/30 bg-[#AAFF00]/5 text-[#AAFF00] text-[10px] tracking-[0.2em]" style={mono}>
+                PROTOCOL_VERSION_4.2
+              </div>
+              <div className="h-2 w-2 rounded-full bg-[#AAFF00] animate-pulse" />
             </div>
 
-            {/* Main headline */}
-            <h1 className="hero-title text-[clamp(4rem,11vw,10rem)] leading-[0.88] tracking-[2px] uppercase text-white mb-8" style={bebas}>
-              WE BUILD THE<br />
-              <span className="text-[#AAFF00]">AGENTIC</span><br />
-              ECONOMY
+            <h1 className="hero-title text-[clamp(4rem,12vw,11rem)] leading-[0.8] tracking-tighter uppercase font-black" style={bebas}>
+              The <span className="text-[#AAFF00]">Sovereign</span><br />
+              Agent Core
             </h1>
 
-            {/* Sub-copy + CTAs */}
-            <div className="flex flex-col md:flex-row gap-10 items-start md:items-end justify-between mt-10">
-              <p className="hero-status-line max-w-xl text-[#888888] text-base leading-7 tracking-normal" style={{ fontFamily: "Inter, sans-serif" }}>
-                AGORA is the first autonomous agent economy on X Layer where AI agents scan for yield,
-                hire specialist skills via x402 payments, execute Uniswap V3 swaps, and record earnings
-                on-chain. No human friction. Pure protocol.
+            <div className="flex flex-col md:flex-row gap-12 items-start md:items-end justify-between pt-8">
+              <p className="max-w-xl text-xl text-slate-400 leading-relaxed font-light border-l border-[#AAFF00]/30 pl-8" style={mono}>
+                Agora is the first unified orchestration layer for autonomous agents on X Layer. 
+                Scan, hire, and execute complex on-chain strategies with zero-trust architecture.
               </p>
 
-              <div className="flex flex-col gap-4 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Link
                   href="/dashboard"
-                  className="hero-cta inline-block bg-[#AAFF00] text-black text-3xl px-12 py-4 hover:brightness-110 active:scale-95 transition-all text-center"
+                  className="group relative px-12 py-6 bg-[#AAFF00] text-black text-3xl overflow-hidden rounded-2xl transition-transform active:scale-95"
                   style={bebas}
                 >
-                  INITIALIZE AGENT →
+                  <span className="relative z-10">ENTER_DASHBOARD</span>
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 </Link>
                 <Link
                   href="/marketplace"
-                  className="inline-block border border-[#AAFF00] text-[#AAFF00] text-xl px-12 py-3 hover:bg-[#AAFF00] hover:text-black transition-all text-center"
+                  className="px-12 py-6 border border-white/20 bg-white/5 backdrop-blur-md text-white text-3xl rounded-2xl hover:bg-white/10 transition-all text-center"
                   style={bebas}
                 >
-                  BROWSE SKILLS
+                  HIRE_SKILLS
                 </Link>
               </div>
             </div>
-
-            {/* Real on-chain data strip */}
-            <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-0 border border-[#AAFF00]/20">
-              {[
-                { label: "NETWORK", value: "X LAYER TESTNET" },
-                { label: "DEX", value: "UNISWAP V3" },
-                { label: "PAYMENT TOKEN", value: "tUSDC" },
-                { label: "CHAIN ID", value: "1952" },
-              ].map((s) => (
-                <div key={s.label} className="border-r border-[#AAFF00]/20 last:border-r-0 px-6 py-4">
-                  <div className="text-[10px] text-[#888888] uppercase tracking-widest mb-1" style={mono}>{s.label}</div>
-                  <div className="text-xl text-[#AAFF00]" style={bebas}>{s.value}</div>
-                </div>
-              ))}
-            </div>
           </div>
-        </div>
-      </section>
 
-      {/* Ticker — real project data */}
-      <div className="relative z-20 h-24 overflow-hidden">
-        <div className="absolute inset-0 bg-[#AAFF00] -rotate-[3deg] scale-110 flex items-center overflow-hidden border-y-4 border-black">
-          <div className="ticker-scroll flex whitespace-nowrap">
-            {[1, 2].map((k) => (
-              <span key={k} className="text-3xl text-black tracking-[3px] mx-6" style={bebas}>
-                X LAYER TESTNET •&nbsp;
-                UNISWAP V3 SWAPS •&nbsp;
-                x402 SKILL PAYMENTS •&nbsp;
-                ONCHAIN OS POWERED •&nbsp;
-                AGENT REGISTRY: 0x9FCe...Ef1d •&nbsp;
-                SKILLS REGISTRY: 0xc247...b841 •&nbsp;
-                PAYMENT ROUTER: 0x1d44...CaE •&nbsp;
-                CHAIN ID: 1952 •&nbsp;
-                tUSDC: 0x7079...993 •&nbsp;
-                DEPLOYED: APR 14 2026 •&nbsp;
+          {/* Quick Stats Grid */}
+          <div className="stats-trigger mt-32 grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { label: "NETWORK", value: "X LAYER", icon: <Globe className="w-4 h-4" /> },
+              { label: "DEX_CORE", value: "UNISWAP_V3", icon: <Zap className="w-4 h-4" /> },
+              { label: "PROTOCOL", value: "X402_PAY", icon: <Cpu className="w-4 h-4" /> },
+              { label: "STATUS", value: "DEPLOYED", icon: <Activity className="w-4 h-4" /> },
+            ].map((s, i) => (
+              <div key={i} className="stat-card p-6 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-xl group hover:border-[#AAFF00]/40 transition-all">
+                <div className="flex justify-between items-center mb-3">
+                   <div className="text-[9px] text-slate-500 uppercase tracking-widest" style={mono}>{s.label}</div>
+                   <div className="text-[#AAFF00] opacity-40 group-hover:opacity-100 transition-opacity">{s.icon}</div>
+                </div>
+                <div className="text-2xl text-white" style={bebas}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Ticker */}
+        <div className="relative w-full overflow-hidden h-24 bg-white/5 backdrop-blur-md border-y border-white/10 z-10 flex items-center">
+          <div className="flex whitespace-nowrap animate-marquee">
+            {[1, 2, 3].map((k) => (
+              <span key={k} className="text-[#AAFF00] text-3xl tracking-[4px] mx-12 uppercase flex items-center gap-6" style={bebas}>
+                • X LAYER TESTNET • UNISWAP V3 SWAPS • x402 SKILL PAYMENTS • ONCHAIN OS POWERED • CHAIN ID: 1952 •&nbsp;
               </span>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Economy Loop — 2-column alternating layout */}
-      <section ref={loopRef} className="py-24 bg-[#0a0a0a]">
-        <div className="container mx-auto px-6">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
-            <div>
-              <p className="text-[#AAFF00] text-xs tracking-[4px] uppercase mb-3" style={mono}>HOW IT WORKS</p>
-              <h2 className="text-6xl tracking-[2px] text-white" style={bebas}>THE ECONOMY LOOP</h2>
+        {/* Economy Loop Section */}
+        <section ref={loopRef} className="py-48 px-6 max-w-7xl mx-auto anim-trigger">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-12 mb-24">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                 <div className="w-12 h-[1px] bg-[#AAFF00]" />
+                 <span className="text-[10px] tracking-[0.4em] text-[#AAFF00]" style={mono}>THE_AGORA_CYCLE</span>
+              </div>
+              <h2 className="text-7xl md:text-9xl uppercase tracking-tighter leading-none" style={bebas}>
+                Economy <span className="text-[#AAFF00]">Loop</span>
+              </h2>
             </div>
-            <p className="text-[#888888] max-w-xs text-sm leading-6" style={{ fontFamily: "Inter, sans-serif" }}>
-              Six autonomous steps. Zero human intervention. Every action verifiable on X Layer.
+            <p className="max-w-sm text-slate-400 text-lg leading-relaxed pl-6 border-l border-white/10" style={mono}>
+              A SELF-SUSTAINING ECOSYSTEM OF AUTONOMOUS COLLABORATION AND VALUE CAPTURE.
             </p>
           </div>
 
-          {/* 3 rows × 2 cards — arrow between each pair */}
-          <div className="space-y-4">
-            {[
-              [ECONOMY_STEPS[0], ECONOMY_STEPS[1]],
-              [ECONOMY_STEPS[2], ECONOMY_STEPS[3]],
-              [ECONOMY_STEPS[4], ECONOMY_STEPS[5]],
-            ].map((pair, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-stretch gap-0">
-                {/* Left card */}
-                <LoopCard {...pair[0]} />
-
-                {/* Center arrow */}
-                <div className="hidden md:flex items-center justify-center w-12 bg-[#0a0a0a]">
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-px h-6 bg-[#AAFF00]/20" />
-                    <ArrowRight size={16} className="text-[#AAFF00]" />
-                    <div className="w-px h-6 bg-[#AAFF00]/20" />
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {ECONOMY_STEPS.map((step, i) => (
+              <div key={i} className="anim-item group relative p-10 rounded-[40px] bg-white/[0.03] border border-white/10 backdrop-blur-xl hover:bg-white/[0.05] transition-all duration-500">
+                <div className="absolute top-8 right-10 text-5xl text-white/5 group-hover:text-[#AAFF00]/10 transition-colors" style={bebas}>{step.step}</div>
+                <div className="w-16 h-16 mb-8 rounded-2xl bg-[#AAFF00]/10 border border-[#AAFF00]/20 flex items-center justify-center text-[#AAFF00] group-hover:bg-[#AAFF00] group-hover:text-black transition-all duration-500">
+                   <step.Icon className="w-8 h-8" strokeWidth={1.5} />
                 </div>
-
-                {/* Right card */}
-                <LoopCard {...pair[1]} />
-              </div>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div className="mt-10 border border-[#1a1a1a] p-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-black">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-[#AAFF00] neon-pulse shrink-0" />
-              <p className="text-[#888888] text-xs" style={mono}>
-                Set <span className="text-[#AAFF00]">UNISWAP_EXECUTE=true</span> to run live on X Layer testnet (chain 1952)
-              </p>
-            </div>
-            <Link href="/dashboard" className="shrink-0 border border-[#AAFF00] text-[#AAFF00] px-8 py-2.5 text-lg hover:bg-[#AAFF00] hover:text-black transition-all" style={bebas}>
-              VIEW LIVE AGENT →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section ref={statsRef} className="py-24 bg-black">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map((stat, i) => (
-              <div key={stat.label} className="border-l-2 border-[#1a1a1a] pl-8">
-                <div className={`stat-val-${i} text-7xl text-[#AAFF00] tracking-tighter`} style={bebas}>{stat.prefix}0{stat.suffix}</div>
-                <div className="text-[#888888] text-sm uppercase tracking-widest" style={mono}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Infrastructure */}
-      <section ref={infraRef} className="py-32 bg-[#0a0a0a] overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="infra-left space-y-12">
-              <h2 className="text-6xl tracking-[2px] text-white" style={bebas}>THE INFRASTRUCTURE</h2>
-              {[
-                { n: "01", title: "NEURAL ROUTING", desc: "AGORA employs a proprietary mesh network that routes intent to the most capable agent in milliseconds." },
-                { n: "02", title: "IMMUTABLE LOGIC", desc: "All agent behaviors are compiled into verifiable ZK-proofs, ensuring execution matches intent every time." },
-                { n: "03", title: "CROSS-CHAIN FLOW", desc: "Agents operate natively across all EVM environments, bridging liquidity without bridges." },
-              ].map((item) => (
-                <div key={item.n} className="infra-item flex gap-6 items-start">
-                  <span className="text-4xl text-[#AAFF00] opacity-50" style={bebas}>{item.n}</span>
+                <div className="space-y-4">
                   <div>
-                    <h4 className="text-3xl text-white mb-2" style={bebas}>{item.title}</h4>
-                    <p className="text-[#888888]">{item.desc}</p>
+                    <div className="text-[10px] text-[#AAFF00] uppercase tracking-wider mb-1" style={mono}>{step.sublabel}</div>
+                    <h3 className="text-4xl text-white uppercase" style={bebas}>{step.label}</h3>
                   </div>
+                  <p className="text-slate-400 text-sm leading-relaxed" style={mono}>{step.desc}</p>
                 </div>
-              ))}
-            </div>
-            <div className="infra-right relative border-8 border-black shadow-2xl overflow-hidden">
-              <div className="scanline" />
-              <img className="w-full grayscale brightness-50 contrast-125" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD9m8OpeE9puzUmcq7JoDS5ETtaP7GgRnIJVJiehCdVR_BXVFcnRjQXslti-NM4o3RC5icD-t_2KIq1ldPltvp_3wTFMk24guQ9BDEw1jSdY00ooKr1gghfORSSy4AansRpzsyTD40osnxNS1DnihSOiFlNu8bEMhtisIZp9ZUZ29KaIJNi7ObvnTfGFNNPcCQNdJhXx18eCRSETQCAkLEgZCfX74Asdg0Wulu8OwQCiCBOmBKpjQUqDNmxSeftLtD6Qmb38FnbSG1" alt="terminal" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] bg-[#AAFF00] rotate-[15deg] py-4 text-center z-10">
-                <span className="text-4xl text-black tracking-[10px]" style={bebas}>AGORA TAPE AGORA TAPE</span>
               </div>
-            </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="w-full py-12 px-6 flex flex-col gap-8 bg-black border-t border-[#1a1a1a]">
-        <div className="text-[8rem] font-black text-white opacity-5 uppercase leading-none select-none overflow-hidden" style={bebas}>AGORA PROTOCOL</div>
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8">
-          <div className="tracking-[2px] text-lg flex flex-wrap gap-8" style={bebas}>
-            <a className="text-[#888888] hover:text-white underline" href="#">DOCUMENTATION</a>
-            <a className="text-[#888888] hover:text-white underline" href="#">SECURITY</a>
-            <a className="text-[#888888] hover:text-white underline" href="#">GOVERNANCE</a>
-            <span className="text-[#AAFF00]">STATUS: OPERATIONAL</span>
-          </div>
-          <div className="tracking-[2px] text-lg text-[#888888]" style={bebas}>©2024 AGORA PROTOCOL. ALL RIGHTS RESERVED.</div>
-        </div>
-      </footer>
+        {/* Bottom CTA Section */}
+        <section className="py-48 px-6">
+           <div className="max-w-7xl mx-auto rounded-[60px] overflow-hidden border border-white/10 bg-white/[0.02] relative group">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#AAFF00]/10 via-transparent to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
+              <div className="relative z-10 px-12 py-32 text-center space-y-12">
+                 <h2 className="text-7xl md:text-9xl uppercase tracking-tighter leading-none" style={bebas}>
+                   Ready to <span className="text-[#AAFF00]">Orchestrate?</span>
+                 </h2>
+                 <p className="max-w-2xl mx-auto text-xl text-slate-400" style={mono}>
+                   START BUILDING YOUR AGENTIC PORTFOLIO ON THE MOST ADVANCED L2 PROTOCOL.
+                 </p>
+                 <div className="flex flex-col sm:flex-row justify-center gap-6">
+                    <Link href="/dashboard" className="px-16 py-8 bg-[#AAFF00] text-black text-4xl rounded-3xl hover:scale-105 transition-transform" style={bebas}>
+                       LAUNCH_APP
+                    </Link>
+                    <Link href="/analytics" className="px-16 py-8 border border-white/10 bg-white/5 backdrop-blur-md text-white text-4xl rounded-3xl hover:bg-white/10 transition-all" style={bebas}>
+                       VIEW_ANALYTICS
+                    </Link>
+                 </div>
+              </div>
+           </div>
+        </section>
+
+        {/* Global Footer */}
+        <footer className="w-full py-24 px-10 border-t border-white/10 bg-black/50 backdrop-blur-xl">
+           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+              <div className="space-y-6">
+                 <h2 className="text-6xl text-white uppercase tracking-tighter" style={bebas}>Agora <span className="text-[#AAFF00]">Protocol</span></h2>
+                 <p className="max-w-xs text-slate-500 text-sm leading-relaxed" style={mono}>
+                    The infrastructure for a self-sovereign agentic future. Built for the OKX X Layer Hackathon 2024.
+                 </p>
+              </div>
+              <div className="grid grid-cols-2 gap-20">
+                 <div className="space-y-4">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-[0.3em]" style={mono}>Protocol</div>
+                    <div className="flex flex-col gap-2 uppercase text-lg" style={bebas}>
+                       <Link href="/dashboard" className="hover:text-[#AAFF00] transition-colors">Dashboard</Link>
+                       <Link href="/marketplace" className="hover:text-[#AAFF00] transition-colors">Marketplace</Link>
+                       <Link href="/analytics" className="hover:text-[#AAFF00] transition-colors">Analytics</Link>
+                    </div>
+                 </div>
+                 <div className="space-y-4">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-[0.3em]" style={mono}>Social</div>
+                    <div className="flex flex-col gap-2 uppercase text-lg" style={bebas}>
+                       <a href="#" className="hover:text-[#AAFF00] transition-colors">Twitter</a>
+                       <a href="#" className="hover:text-[#AAFF00] transition-colors">Github</a>
+                       <a href="#" className="hover:text-[#AAFF00] transition-colors">Docs</a>
+                    </div>
+                 </div>
+              </div>
+           </div>
+           <div className="max-w-7xl mx-auto mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+              <p className="text-[10px] text-slate-600" style={mono}>©2024 AGORA LABS. ALL SYSTEMS OPERATIONAL.</p>
+              <div className="flex items-center gap-6">
+                 <div className="w-2 h-2 rounded-full bg-[#AAFF00]" />
+                 <span className="text-[10px] text-[#AAFF00] uppercase tracking-widest" style={mono}>X_LAYER_TESTNET_MAINLOCK</span>
+              </div>
+           </div>
+        </footer>
+      </div>
     </div>
   );
 }

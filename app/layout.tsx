@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AgoraWagmiProvider } from "../components/WagmiProvider";
+import { AgentProvider } from "../lib/AgentContext";
 import Navbar from "../components/Navbar";
 import "./globals.css";
 
@@ -23,8 +24,10 @@ export default function RootLayout({
       </head>
       <body className="bg-black text-[#e2e2e2] overflow-x-hidden">
         <AgoraWagmiProvider>
-          <Navbar />
-          <main>{children}</main>
+          <AgentProvider>
+            <Navbar />
+            <main>{children}</main>
+          </AgentProvider>
         </AgoraWagmiProvider>
       </body>
     </html>

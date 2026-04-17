@@ -79,4 +79,13 @@ contract AgentRegistry {
         agent.totalEarned += amount;
         emit AgentEarningsRecorded(agentId, amount, agent.totalEarned);
     }
+
+    /// @notice Returns all agents registered in the protocol.
+    /// @return allAgents Array of all Agent structs.
+    function getAllAgents() external view returns (Agent[] memory allAgents) {
+        allAgents = new Agent[](agentCount);
+        for (uint256 i = 1; i <= agentCount; i++) {
+            allAgents[i - 1] = agents[i];
+        }
+    }
 }

@@ -21,7 +21,7 @@ export default function LatestReceipt() {
   const { data: receipt } = useReadContract({
     address: addresses.paymentRouter,
     abi: paymentRouterAbi,
-    functionName: "receipts",
+    functionName: "getReceipt",
     args: receiptCount && receiptCount > 0n ? [receiptCount] : undefined,
     query: { enabled: Boolean(receiptCount && receiptCount > 0n) },
   });

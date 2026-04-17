@@ -51,7 +51,7 @@ export default function HireSkillButton({ skillId, priceUSDC }: HireSkillButtonP
     contracts: receiptIds.map((id) => ({
       address: addresses.paymentRouter,
       abi: paymentRouterAbi,
-      functionName: "receipts",
+      functionName: "getReceipt",
       args: [id],
     })),
     query: { enabled: receiptIds.length > 0 && Boolean(agentId) },
@@ -62,8 +62,9 @@ export default function HireSkillButton({ skillId, priceUSDC }: HireSkillButtonP
     
     return receiptsData.some((receipt) => {
       if (!receipt.result) return false;
-      // Receipt struct: (agentId, skillId, amount, timestamp, completed)
-      const [receiptAgentId, receiptSkillId] = receipt.result as [bigint, bigint, bigint, bigint, boolean];
+      // getReceipt returns: (agentId, skillId, amount, timestamp, completed)
+      const result = receipt.result as unknown as readonly [bigint, bigint, bigint, bigint, boolean];
+      const [receiptAgentId, receiptSkillId] = result;
       return receiptAgentId === agentId && receiptSkillId === BigInt(skillId);
     });
   }, [receiptsData, agentId, skillId]);

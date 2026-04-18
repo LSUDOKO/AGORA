@@ -58,7 +58,8 @@ const ECONOMY_STEPS = [
   },
 ];
 
-const bebas = { fontFamily: "'Bebas Neue', cursive" };
+const orbitron = { fontFamily: "'Orbitron', sans-serif" };
+const space = { fontFamily: "'Space Grotesk', sans-serif" };
 const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 export default function HomePage() {
@@ -115,8 +116,10 @@ export default function HomePage() {
   if (!mounted) return <div className="min-h-screen bg-black" />;
 
   return (
-    <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/30 overflow-x-hidden">
-      <GradientBackground />
+    <div className="relative min-h-screen bg-black text-white selection:bg-[#AAFF00]/20 overflow-x-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0a] to-black opacity-60">
+        <GradientBackground />
+      </div>
 
       <div className="relative z-10">
         {/* Hero Section */}
@@ -124,16 +127,15 @@ export default function HomePage() {
           <div className="space-y-8">
             <div className="flex items-center gap-4">
               <div className="px-3 py-1 rounded-full border border-[#AAFF00]/30 bg-[#AAFF00]/5 text-[#AAFF00] text-[10px] tracking-[0.2em]" style={mono}>
-                PROTOCOL_VERSION_4.2
+                PROTOCOL VERSION 4.2
               </div>
               <div className="h-2 w-2 rounded-full bg-[#AAFF00] animate-pulse" />
             </div>
 
-            <h1 className="hero-title text-[clamp(4rem,12vw,11rem)] leading-[0.85] tracking-tighter uppercase font-black" style={bebas}>
-              <span className="text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">The</span>{" "}
-              <span className="text-[#AAFF00] drop-shadow-[0_0_40px_rgba(170,255,0,0.5)]">Sovereign</span>
+            <h1 className="hero-title text-[clamp(4rem,12vw,11rem)] leading-[0.85] tracking-[0.02em] uppercase font-black" style={orbitron}>
+              <span className="text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">We Build The</span>
               <br />
-              <span className="text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">Agent Core</span>
+              <span className="text-[#AAFF00] drop-shadow-[0_0_30px_rgba(170,255,0,0.3)]">Agentic Economy</span>
             </h1>
 
             <div className="flex flex-col md:flex-row gap-12 items-start md:items-end justify-between pt-8">
@@ -146,17 +148,17 @@ export default function HomePage() {
                 <Link
                   href="/dashboard"
                   className="group relative px-12 py-6 bg-[#AAFF00] text-black text-3xl overflow-hidden rounded-2xl transition-transform active:scale-95"
-                  style={bebas}
+                  style={orbitron}
                 >
-                  <span className="relative z-10">ENTER_DASHBOARD</span>
+                  <span className="relative z-10">ENTER DASHBOARD</span>
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 </Link>
                 <Link
                   href="/marketplace"
-                  className="px-12 py-6 border border-white/20 bg-white/5 backdrop-blur-md text-white text-3xl rounded-2xl hover:bg-white/10 transition-all text-center"
-                  style={bebas}
+                  className="px-12 py-6 border border-white/10 bg-white/5 backdrop-blur-md text-white text-3xl rounded-2xl hover:bg-white/10 transition-all text-center"
+                  style={orbitron}
                 >
-                  HIRE_SKILLS
+                  HIRE SKILLS
                 </Link>
               </div>
             </div>
@@ -166,8 +168,8 @@ export default function HomePage() {
           <div className="stats-trigger mt-32 grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { label: "NETWORK", value: "X LAYER", icon: <Globe className="w-4 h-4" /> },
-              { label: "DEX_CORE", value: "UNISWAP_V3", icon: <Zap className="w-4 h-4" /> },
-              { label: "PROTOCOL", value: "X402_PAY", icon: <Cpu className="w-4 h-4" /> },
+              { label: "DEX CORE", value: "UNISWAP V3", icon: <Zap className="w-4 h-4" /> },
+              { label: "PROTOCOL", value: "X402 PAY", icon: <Cpu className="w-4 h-4" /> },
               { label: "STATUS", value: "DEPLOYED", icon: <Activity className="w-4 h-4" /> },
             ].map((s, i) => (
               <div key={i} className="stat-card p-6 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-xl group hover:border-[#AAFF00]/40 transition-all">
@@ -175,18 +177,18 @@ export default function HomePage() {
                    <div className="text-[9px] text-slate-500 uppercase tracking-widest" style={mono}>{s.label}</div>
                    <div className="text-[#AAFF00] opacity-40 group-hover:opacity-100 transition-opacity">{s.icon}</div>
                 </div>
-                <div className="text-2xl text-white" style={bebas}>{s.value}</div>
+                <div className="text-2xl text-white" style={orbitron}>{s.value}</div>
               </div>
             ))}
           </div>
         </section>
 
         {/* Ticker */}
-        <div className="relative w-full overflow-hidden h-24 bg-white/5 backdrop-blur-md border-y border-white/10 z-10 flex items-center">
+        <div className="relative w-full overflow-hidden h-24 bg-black/80 backdrop-blur-md border-y border-white/5 z-10 flex items-center">
           <div className="flex whitespace-nowrap animate-marquee">
             {[1, 2, 3].map((k) => (
-              <span key={k} className="text-[#AAFF00] text-3xl tracking-[4px] mx-12 uppercase flex items-center gap-6" style={bebas}>
-                • X LAYER TESTNET • UNISWAP V3 SWAPS • x402 SKILL PAYMENTS • ONCHAIN OS POWERED • CHAIN ID: 1952 •&nbsp;
+              <span key={k} className="text-[#AAFF00] text-3xl tracking-[4px] mx-12 uppercase flex items-center gap-6" style={orbitron}>
+                X LAYER TESTNET • UNISWAP V3 SWAPS • X402 SKILL PAYMENTS • ONCHAIN OS POWERED • CHAIN ID 1952 •&nbsp;
               </span>
             ))}
           </div>
@@ -198,9 +200,9 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                  <div className="w-12 h-[1px] bg-[#AAFF00]" />
-                 <span className="text-[10px] tracking-[0.4em] text-[#AAFF00]" style={mono}>THE_AGORA_CYCLE</span>
+                 <span className="text-[10px] tracking-[0.4em] text-[#AAFF00]" style={mono}>THE AGORA CYCLE</span>
               </div>
-              <h2 className="text-7xl md:text-9xl uppercase tracking-tighter leading-none" style={bebas}>
+              <h2 className="text-7xl md:text-9xl uppercase tracking-[0.05em] leading-none" style={orbitron}>
                 Economy <span className="text-[#AAFF00]">Loop</span>
               </h2>
             </div>
@@ -212,14 +214,14 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {ECONOMY_STEPS.map((step, i) => (
               <div key={i} className="anim-item group relative p-10 rounded-[40px] bg-white/[0.03] border border-white/10 backdrop-blur-xl hover:bg-white/[0.05] transition-all duration-500">
-                <div className="absolute top-8 right-10 text-5xl text-white/5 group-hover:text-[#AAFF00]/10 transition-colors" style={bebas}>{step.step}</div>
+                <div className="absolute top-8 right-10 text-5xl text-white/5 group-hover:text-[#AAFF00]/10 transition-colors" style={orbitron}>{step.step}</div>
                 <div className="w-16 h-16 mb-8 rounded-2xl bg-[#AAFF00]/10 border border-[#AAFF00]/20 flex items-center justify-center text-[#AAFF00] group-hover:bg-[#AAFF00] group-hover:text-black transition-all duration-500">
                    <step.Icon className="w-8 h-8" strokeWidth={1.5} />
                 </div>
                 <div className="space-y-4">
                   <div>
                     <div className="text-[10px] text-[#AAFF00] uppercase tracking-wider mb-1" style={mono}>{step.sublabel}</div>
-                    <h3 className="text-4xl text-white uppercase" style={bebas}>{step.label}</h3>
+                    <h3 className="text-4xl text-white uppercase" style={orbitron}>{step.label}</h3>
                   </div>
                   <p className="text-slate-400 text-sm leading-relaxed" style={mono}>{step.desc}</p>
                 </div>
@@ -233,18 +235,18 @@ export default function HomePage() {
            <div className="max-w-7xl mx-auto rounded-[60px] overflow-hidden border border-white/10 bg-white/[0.02] relative group">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#AAFF00]/10 via-transparent to-transparent opacity-30 group-hover:opacity-50 transition-opacity" />
               <div className="relative z-10 px-12 py-32 text-center space-y-12">
-                 <h2 className="text-7xl md:text-9xl uppercase tracking-tighter leading-none" style={bebas}>
+                 <h2 className="text-7xl md:text-9xl uppercase tracking-[0.05em] leading-none" style={orbitron}>
                    Ready to <span className="text-[#AAFF00]">Orchestrate?</span>
                  </h2>
                  <p className="max-w-2xl mx-auto text-xl text-slate-400" style={mono}>
                    START BUILDING YOUR AGENTIC PORTFOLIO ON THE MOST ADVANCED L2 PROTOCOL.
                  </p>
                  <div className="flex flex-col sm:flex-row justify-center gap-6">
-                    <Link href="/dashboard" className="px-16 py-8 bg-[#AAFF00] text-black text-4xl rounded-3xl hover:scale-105 transition-transform" style={bebas}>
-                       LAUNCH_APP
+                    <Link href="/dashboard" className="px-16 py-8 bg-[#AAFF00] text-black text-4xl rounded-3xl hover:scale-105 transition-transform" style={orbitron}>
+                       LAUNCH APP
                     </Link>
-                    <Link href="/analytics" className="px-16 py-8 border border-white/10 bg-white/5 backdrop-blur-md text-white text-4xl rounded-3xl hover:bg-white/10 transition-all" style={bebas}>
-                       VIEW_ANALYTICS
+                    <Link href="/analytics" className="px-16 py-8 border border-white/10 bg-white/5 backdrop-blur-md text-white text-4xl rounded-3xl hover:bg-white/10 transition-all" style={orbitron}>
+                       VIEW ANALYTICS
                     </Link>
                  </div>
               </div>
@@ -263,7 +265,7 @@ export default function HomePage() {
                        className="w-full h-full object-cover"
                      />
                    </div>
-                   <h2 className="text-6xl text-white uppercase tracking-tighter" style={bebas}>Agora <span className="text-[#AAFF00]">Protocol</span></h2>
+                   <h2 className="text-6xl text-white uppercase tracking-[0.05em]" style={orbitron}>Agora <span className="text-[#AAFF00]">Protocol</span></h2>
                  </div>
                  <p className="max-w-xs text-slate-500 text-sm leading-relaxed" style={mono}>
                     The infrastructure for a self-sovereign agentic future. Built for the OKX X Layer Hackathon 2024.
@@ -272,7 +274,7 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-20">
                  <div className="space-y-4">
                     <div className="text-[10px] text-slate-500 uppercase tracking-[0.3em]" style={mono}>Protocol</div>
-                    <div className="flex flex-col gap-2 uppercase text-lg" style={bebas}>
+                    <div className="flex flex-col gap-2 uppercase text-lg" style={orbitron}>
                        <Link href="/dashboard" className="hover:text-[#AAFF00] transition-colors">Dashboard</Link>
                        <Link href="/marketplace" className="hover:text-[#AAFF00] transition-colors">Marketplace</Link>
                        <Link href="/analytics" className="hover:text-[#AAFF00] transition-colors">Analytics</Link>
@@ -280,7 +282,7 @@ export default function HomePage() {
                  </div>
                  <div className="space-y-4">
                     <div className="text-[10px] text-slate-500 uppercase tracking-[0.3em]" style={mono}>Social</div>
-                    <div className="flex flex-col gap-2 uppercase text-lg" style={bebas}>
+                    <div className="flex flex-col gap-2 uppercase text-lg" style={orbitron}>
                        <a href="#" className="hover:text-[#AAFF00] transition-colors">Twitter</a>
                        <a href="#" className="hover:text-[#AAFF00] transition-colors">Github</a>
                        <a href="#" className="hover:text-[#AAFF00] transition-colors">Docs</a>
@@ -289,10 +291,10 @@ export default function HomePage() {
               </div>
            </div>
            <div className="max-w-7xl mx-auto mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-              <p className="text-[10px] text-slate-600" style={mono}>©2024 AGORA LABS. ALL SYSTEMS OPERATIONAL.</p>
+              <p className="text-[10px] text-slate-700" style={mono}>2024 AGORA LABS - ALL SYSTEMS OPERATIONAL</p>
               <div className="flex items-center gap-6">
                  <div className="w-2 h-2 rounded-full bg-[#AAFF00]" />
-                 <span className="text-[10px] text-[#AAFF00] uppercase tracking-widest" style={mono}>X_LAYER_TESTNET_MAINLOCK</span>
+                 <span className="text-[10px] text-[#AAFF00] uppercase tracking-widest" style={mono}>X LAYER TESTNET MAINLOCK</span>
               </div>
            </div>
         </footer>

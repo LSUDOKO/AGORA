@@ -18,7 +18,7 @@ const navItems = [
   { href: "/chat", label: "AI CHAT" },
 ];
 
-const bebas = { fontFamily: "'Bebas Neue', cursive" };
+const orbitron = { fontFamily: "'Orbitron', sans-serif" };
 const mono = { fontFamily: "'JetBrains Mono', monospace" };
 
 export default function Navbar() {
@@ -50,7 +50,7 @@ export default function Navbar() {
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="text-3xl font-black text-white tracking-tighter" style={bebas}>
+          <span className="text-3xl font-black text-white tracking-[0.1em]" style={orbitron}>
             AGORA
           </span>
         </Link>
@@ -68,7 +68,7 @@ export default function Navbar() {
                     ? "text-[#AAFF00] font-bold"
                     : "text-slate-400 hover:text-white"
                 }`}
-                style={bebas}
+                style={orbitron}
               >
                 {isActive && (
                   <span className="absolute inset-0 bg-[#AAFF00]/10 border border-[#AAFF00]/20 rounded-xl" />
@@ -106,7 +106,7 @@ export default function Navbar() {
                 <button
                   onClick={() => disconnect()}
                   className="px-5 py-2 rounded-xl bg-white/5 text-xs text-white hover:bg-white/10 transition font-bold tracking-widest"
-                  style={bebas}
+                  style={orbitron}
                 >
                   EXIT
                 </button>
@@ -118,10 +118,10 @@ export default function Navbar() {
                   onClick={() => connect({ connector })}
                   disabled={isPending}
                   className="group flex items-center gap-3 px-6 py-2.5 rounded-xl bg-[#AAFF00] text-black text-sm font-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_4px_15px_rgba(170,255,0,0.3)]"
-                  style={bebas}
+                  style={orbitron}
                 >
                   <Wallet size={16} />
-                  <span>{isPending ? "SCANNING..." : "INITIALIZE WALLET"}</span>
+                  <span>{isPending ? "CONNECTING..." : "CONNECT WALLET"}</span>
                 </button>
               ))
             ) : null}
@@ -149,7 +149,7 @@ export default function Navbar() {
                 className={`px-6 py-4 rounded-2xl text-xl transition-all ${
                   pathname === item.href ? "bg-[#AAFF00]/10 text-[#AAFF00]" : "text-white hover:bg-white/5"
                 }`}
-                style={bebas}
+                style={orbitron}
               >
                 {item.label}
               </Link>
@@ -161,7 +161,7 @@ export default function Navbar() {
                <button
                  onClick={() => { disconnect(); setMobileMenuOpen(false); }}
                  className="w-full py-4 rounded-2xl bg-white/5 text-white text-xl"
-                 style={bebas}
+                 style={orbitron}
                >
                  DISCONNECT
                </button>
@@ -171,7 +171,7 @@ export default function Navbar() {
                    key={connector.uid}
                    onClick={() => { connect({ connector }); setMobileMenuOpen(false); }}
                    className="w-full py-4 rounded-2xl bg-[#AAFF00] text-black text-xl font-black"
-                   style={bebas}
+                   style={orbitron}
                  >
                    CONNECT WALLET
                  </button>

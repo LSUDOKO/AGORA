@@ -108,7 +108,7 @@ export class ExecutionAgent {
       console.log(`[ExecutionAgent] Token Out: ${opportunity.token1}`);
       console.log(`[ExecutionAgent] Amount: ${opportunity.amount.toString()}`);
       console.log(`[ExecutionAgent] Pool: ${opportunity.poolAddress}`);
-      console.log(`[ExecutionAgent] Expected APY: ${opportunity.apy}%`);
+      console.log(`[ExecutionAgent] Expected APY: ${opportunity.estimatedAPY}%`);
       
       // Simulate successful execution
       const result = { 

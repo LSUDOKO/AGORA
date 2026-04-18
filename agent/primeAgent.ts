@@ -108,12 +108,12 @@ export class PrimeAgent {
     const [gas, liquidity, portfolio] = await Promise.all([
       analyzeGas(this.rpcUrl),
       monitorLiquidity(this.rpcUrl),
-      trackPortfolio(this.rpcUrl, this.account.address, resolvePaymentToken()),
+      trackPortfolio(this.rpcUrl, this.account.address, [resolvePaymentToken()]),
     ]);
     const sentiment = await analyzeMarketSentiment(resolveTestnetSwapTokenIn());
     console.log(`Gas: ${gas.gasPriceGwei} gwei (${gas.executionBand})`);
     console.log(`Liquidity: ${liquidity.summary}`);
-    console.log(`Portfolio: ${portfolio.formattedBalance} ${portfolio.symbol}`);
+    console.log(`Portfolio: $${portfolio.totalUsd.toFixed(2)} across ${portfolio.tokens.length} tokens`);
     console.log(`Sentiment: ${sentiment.label} (${sentiment.score})`);
 
     try {

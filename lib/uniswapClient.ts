@@ -116,11 +116,14 @@ export class UniswapClient {
       throw new Error("Invalid token or wallet address supplied to checkApproval.");
     }
 
+    // Map X Layer Testnet to Mainnet for Uniswap API support
+    const apiChainId = chainId === 1952 ? 196 : chainId;
+
     return this.request<UniswapCheckApprovalResponse>("/check_approval", "POST", {
       token,
       amount,
       walletAddress,
-      chainId,
+      chainId: apiChainId,
     });
   }
 
@@ -129,14 +132,17 @@ export class UniswapClient {
       throw new Error("Invalid address supplied to getQuote.");
     }
 
+    // Map X Layer Testnet to Mainnet for Uniswap API support
+    const apiChainId = params.chainId === 1952 ? 196 : params.chainId;
+
     return this.request<UniswapQuoteResponse>("/quote", "POST", {
       tokenIn: params.tokenIn,
       tokenOut: params.tokenOut,
       amount: params.amount,
       type: params.type,
       swapper: params.swapper,
-      tokenInChainId: params.chainId.toString(),
-      tokenOutChainId: params.chainId.toString(),
+      tokenInChainId: apiChainId,
+      tokenOutChainId: apiChainId,
       protocols: params.protocols,
       slippageTolerance: params.slippageTolerance,
       routingPreference: params.routingPreference,

@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/arpit/Desktop/hackathon_projects/agora/contracts/AgentRegistry.sol": {
-      "lastModificationDate": 1776101882034,
-      "contentHash": "291e410dd3bcec538de57e5d11ac011a",
+      "lastModificationDate": 1776354499767,
+      "contentHash": "e6d06ee1e2519df8eed6307002333377",
       "sourceName": "contracts/AgentRegistry.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -74,8 +74,8 @@
       ]
     },
     "/home/arpit/Desktop/hackathon_projects/agora/contracts/SkillsRegistry.sol": {
-      "lastModificationDate": 1776101938434,
-      "contentHash": "86f85829070406755da742ffab21f65f",
+      "lastModificationDate": 1776354490023,
+      "contentHash": "41ba3170eb597fa23296d6f2ab26c40e",
       "sourceName": "contracts/SkillsRegistry.sol",
       "solcConfig": {
         "version": "0.8.20",

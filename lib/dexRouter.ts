@@ -122,6 +122,47 @@ export class UniswapDexRouter implements DexRouter {
   }
 
   async checkApproval(params: ApprovalParams): Promise<ApprovalResult> {
+    // If on X Layer Testnet (1952), the Uniswap Trading API won't have allowance data.
+    // Perform a local on-chain check instead.
+    if (params.chainId === 1952) {
+      const { erc20Abi, createPublicClient, http, getAddress } = await import("viem");
+      const { xlayerTestnet } = await import("./chain");
+      const { resolveRpcUrl } = await import("./agentConfig");
+      const { UNISWAP_XLAYER_TESTNET } = await import("./uniswap");
+
+      const publicClient = createPublicClient({
+        chain: xlayerTestnet,
+        transport: http(resolveRpcUrl()),
+      });
+
+      const allowance = await publicClient.readContract({
+        address: getAddress(params.token),
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [getAddress(params.walletAddress), getAddress(UNISWAP_XLAYER_TESTNET.universalRouterV2)],
+      });
+
+      if (allowance >= BigInt(params.amount)) {
+        return { approval: null };
+      }
+
+      // If allowance is insufficient, return an approval transaction targeting our testnet router
+      const { encodeFunctionData } = await import("viem");
+      const data = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [getAddress(UNISWAP_XLAYER_TESTNET.universalRouterV2), BigInt(params.amount)],
+      });
+
+      return {
+        approval: {
+          to: getAddress(params.token),
+          data,
+          chainId: params.chainId,
+        },
+      };
+    }
+
     const response: UniswapCheckApprovalResponse = await this.client.checkApproval(
       params.token,
       params.amount,

@@ -37,7 +37,7 @@ export function callOnchainOS(command: string): any {
       return null;
     }
 
-    console.warn(`Onchain OS CLI error for command "${command}":`, error?.message || error);
+    // console.warn(`Onchain OS CLI error for command "${command}":`, error?.message || error);
     return null;
   }
 }

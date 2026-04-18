@@ -36,34 +36,34 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-0 w-full z-[100] px-6 py-4 md:px-10 md:py-6">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-20 rounded-[2rem] border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-2xl">
+    <nav className="fixed top-0 w-full z-[100] px-6 py-2 md:px-10 md:py-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16 rounded-[1.5rem] border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-2xl">
         {/* Logo */}
         <Link
           href="/"
           className="group flex items-center gap-3"
         >
-          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(170,255,0,0.3)] group-hover:shadow-[0_0_30px_rgba(170,255,0,0.5)] transition-all">
+          <div className="w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_15px_rgba(170,255,0,0.3)] group-hover:shadow-[0_0_25px_rgba(170,255,0,0.5)] transition-all">
             <img 
               src="/logo.png" 
               alt="AGORA Logo" 
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="text-3xl font-black text-white tracking-[0.1em]" style={orbitron}>
+          <span className="text-2xl font-black text-white tracking-[0.1em]" style={orbitron}>
             AGORA
           </span>
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex gap-1 items-center px-2 py-1.5 rounded-2xl bg-white/[0.02] border border-white/5">
+        <div className="hidden lg:flex gap-1 items-center px-1.5 py-1 rounded-xl bg-white/[0.02] border border-white/5">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative px-5 py-2 text-sm transition-all duration-300 tracking-[1px] uppercase rounded-xl overflow-hidden group ${
+                className={`relative px-4 py-1.5 text-[11px] transition-all duration-300 tracking-[1px] uppercase rounded-lg overflow-hidden group ${
                   isActive
                     ? "text-[#AAFF00] font-bold"
                     : "text-slate-400 hover:text-white"
@@ -88,24 +88,24 @@ export default function Navbar() {
             {mounted && isConnected && chainId !== ACTIVE_CHAIN.id && (
               <button
                 onClick={() => switchChain({ chainId: ACTIVE_CHAIN.id })}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all text-[10px] font-bold uppercase tracking-widest"
+                className="flex items-center gap-2 px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-all text-[9px] font-bold uppercase tracking-widest"
                 style={mono}
               >
-                <AlertCircle size={14} />
+                <AlertCircle size={12} />
                 WRONG_NETWORK: SWITCH_TO_X_LAYER
               </button>
             )}
             {mounted && isConnected ? (
-              <div className="flex items-center gap-4 p-1 rounded-2xl bg-white/[0.02] border border-white/10">
-                <div className="px-4 py-1.5 text-right">
-                  <div className="text-[8px] uppercase tracking-[0.3em] text-[#AAFF00] font-bold">Protocol_Link</div>
-                  <div className="text-xs text-white font-bold tracking-tight" style={mono}>
+              <div className="flex items-center gap-4 p-0.5 rounded-xl bg-white/[0.02] border border-white/10">
+                <div className="px-3 py-1 text-right">
+                  <div className="text-[7px] uppercase tracking-[0.3em] text-[#AAFF00] font-bold">Protocol_Link</div>
+                  <div className="text-[10px] text-white font-bold tracking-tight" style={mono}>
                     {shortAddress(toXkoAddress(address))}
                   </div>
                 </div>
                 <button
                   onClick={() => disconnect()}
-                  className="px-5 py-2 rounded-xl bg-white/5 text-xs text-white hover:bg-white/10 transition font-bold tracking-widest"
+                  className="px-4 py-1.5 rounded-lg bg-white/5 text-[10px] text-white hover:bg-white/10 transition font-bold tracking-widest"
                   style={orbitron}
                 >
                   EXIT
@@ -117,10 +117,10 @@ export default function Navbar() {
                   key={connector.uid}
                   onClick={() => connect({ connector })}
                   disabled={isPending}
-                  className="group flex items-center gap-3 px-6 py-2.5 rounded-xl bg-[#AAFF00] text-black text-sm font-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_4px_15px_rgba(170,255,0,0.3)]"
+                  className="group flex items-center gap-2.5 px-5 py-2 rounded-lg bg-[#AAFF00] text-black text-[11px] font-black hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 shadow-[0_4px_12px_rgba(170,255,0,0.25)]"
                   style={orbitron}
                 >
-                  <Wallet size={16} />
+                  <Wallet size={14} />
                   <span>{isPending ? "CONNECTING..." : "CONNECT WALLET"}</span>
                 </button>
               ))

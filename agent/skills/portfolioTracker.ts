@@ -43,6 +43,11 @@ export async function trackPortfolio(
   owner: `0x${string}`,
   tokenAddresses: `0x${string}`[],
 ): Promise<PortfolioSnapshot> {
+  if (!Array.isArray(tokenAddresses)) {
+    console.error("trackPortfolio error: tokenAddresses is not an array:", tokenAddresses);
+    // Fallback to empty array if somehow called incorrectly
+    tokenAddresses = [];
+  }
   const publicClient = createChainPublicClient(rpcUrl);
 
   const tokenBalances: TokenBalance[] = await Promise.all(

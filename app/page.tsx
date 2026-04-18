@@ -132,14 +132,14 @@ export default function HomePage() {
               <div className="h-2 w-2 rounded-full bg-[#AAFF00] animate-pulse" />
             </div>
 
-            <h1 className="hero-title text-[clamp(4rem,12vw,11rem)] leading-[0.85] tracking-[0.02em] uppercase font-black" style={orbitron}>
+            <h1 className="hero-title text-[clamp(3.5rem,10vw,8rem)] leading-[0.85] tracking-[0.02em] uppercase font-black" style={orbitron}>
               <span className="text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">We Build The</span>
               <br />
-              <span className="text-[#AAFF00] drop-shadow-[0_0_30px_rgba(170,255,0,0.3)]">Agentic Economy</span>
+              <span className="text-[#AAFF00] drop-shadow-[0_0_40px_rgba(170,255,0,0.35)]">Agentic Economy</span>
             </h1>
 
-            <div className="flex flex-col md:flex-row gap-12 items-start md:items-end justify-between pt-8">
-              <p className="max-w-xl text-xl text-slate-400 leading-relaxed font-light border-l border-[#AAFF00]/30 pl-8" style={mono}>
+            <div className="flex flex-col md:flex-row gap-16 items-start md:items-end justify-between pt-12">
+              <p className="max-w-2xl text-2xl text-slate-400 leading-relaxed font-light border-l-2 border-[#AAFF00] pl-10" style={mono}>
                 Agora is the first unified orchestration layer for autonomous agents on X Layer. 
                 Scan, hire, and execute complex on-chain strategies with zero-trust architecture.
               </p>
